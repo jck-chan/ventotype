@@ -60,6 +60,18 @@ export class OverlayWindow {
     this.win?.hide();
   }
 
+  /**
+   * Tear down the overlay. Required before quit: `closable: false` windows otherwise
+   * block `app.quit()` on macOS.
+   */
+  destroy(): void {
+    this.stopFollowing();
+    if (this.win && !this.win.isDestroyed()) {
+      this.win.destroy();
+    }
+    this.win = null;
+  }
+
   /** Tell the overlay renderer to begin audio capture. */
   sendStart(): void {
     this.win?.webContents.send(IPC.Dictation.Start);

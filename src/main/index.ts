@@ -61,6 +61,10 @@ app.whenReady().then(() => {
   store.on('change', applyShortcuts);
 });
 
+app.on('before-quit', () => {
+  overlayWindow.destroy();
+});
+
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   menuBarTray?.destroy();
