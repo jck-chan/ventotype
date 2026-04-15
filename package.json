@@ -26,6 +26,7 @@
   "build": {
     "appId": "com.ventotype.app",
     "productName": "VentoType",
+    "icon": "resources/icon.png",
     "files": [
       "out/**/*",
       "resources/**/*"

@@ -2,7 +2,7 @@ import { Menu, Tray, app, nativeImage } from 'electron';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const TRAY_ICON_FILE = 'tray-icon.png';
+const TRAY_ICON_FILE = 'icon-tray.png';
 
 /** Electron docs: ~22×22 on macOS, 16×16 on Windows/Linux (including margin). */
 function trayIconMaxPx(): number {
