@@ -18,8 +18,8 @@ const fields = {
   apiKey:        $<HTMLInputElement>('apiKey'),
   model:         $<HTMLInputElement>('model'),
   language:      $<HTMLInputElement>('language'),
-  startShortcut: $<HTMLInputElement>('startShortcut'),
-  stopShortcut:  $<HTMLInputElement>('stopShortcut')
+  toggleShortcut: $<HTMLInputElement>('toggleShortcut'),
+  cancelShortcut: $<HTMLInputElement>('cancelShortcut')
 };
 
 const saveBtn    = $<HTMLButtonElement>('saveBtn');
@@ -36,8 +36,8 @@ async function load(): Promise<void> {
     fields.apiKey.value        = s.apiKey        ?? '';
     fields.model.value         = s.model         ?? '';
     fields.language.value      = s.language      ?? '';
-    fields.startShortcut.value = s.startShortcut ?? '';
-    fields.stopShortcut.value  = s.stopShortcut  ?? '';
+    fields.toggleShortcut.value = s.toggleShortcut ?? '';
+    fields.cancelShortcut.value = s.cancelShortcut ?? '';
   } catch (err) {
     showStatus('Failed to load settings.', 'err');
     console.error(err);
@@ -53,8 +53,8 @@ async function save(): Promise<void> {
       apiKey:        fields.apiKey.value.trim(),
       model:         fields.model.value.trim() || 'whisper-1',
       language:      fields.language.value.trim(),
-      startShortcut: fields.startShortcut.value.trim(),
-      stopShortcut:  fields.stopShortcut.value.trim()
+      toggleShortcut: fields.toggleShortcut.value.trim(),
+      cancelShortcut: fields.cancelShortcut.value.trim()
     });
     showStatus('Settings saved.', 'ok');
   } catch (err) {
@@ -143,7 +143,7 @@ function stopCapture(input: HTMLInputElement): void {
   if (capturingField === input) capturingField = null;
 }
 
-for (const inputId of ['startShortcut', 'stopShortcut'] as const) {
+for (const inputId of ['toggleShortcut', 'cancelShortcut'] as const) {
   const input = fields[inputId];
 
   input.addEventListener('click', () => {

@@ -13,7 +13,7 @@ Background dictation app for macOS and Windows. Press a global shortcut, speak, 
 | Error        | Red exclamation        |
 
 
-Pressing the **start shortcut** toggles recording on/off. The dedicated **stop shortcut** always stops recording. After stopping, audio is sent to your Whisper endpoint, and the transcript is pasted at the current cursor position.
+Pressing the **toggle shortcut** starts recording, or — while recording — **stops** and sends audio to Whisper for transcription. The **cancel shortcut** **discards** the current take (no transcription, no paste) and returns to idle.
 
 ## Setup
 

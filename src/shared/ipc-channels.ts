@@ -6,6 +6,7 @@ export const IPC = {
   Dictation: {
     Start: 'dictation:start',
     Stop: 'dictation:stop',
+    Cancel: 'dictation:cancel',
     AudioBlob: 'dictation:audio-blob',
     StateChanged: 'dictation:state-changed',
     RecordError: 'dictation:record-error'

@@ -3,8 +3,8 @@ export interface Settings {
   apiKey: string;
   model: string;
   language: string;
-  startShortcut: string;
-  stopShortcut: string;
+  toggleShortcut: string;
+  cancelShortcut: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -12,8 +12,8 @@ export const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   model: 'whisper-1',
   language: '',
-  startShortcut: 'CommandOrControl+Shift+D',
-  stopShortcut: 'CommandOrControl+Shift+.'
+  toggleShortcut: 'Control+H',
+  cancelShortcut: 'Control+Shift+H'
 };
 
 export type DictationState = 'idle' | 'recording' | 'transcribing' | 'typing' | 'error';

@@ -1,13 +1,13 @@
 import { globalShortcut } from 'electron';
 
 export interface ShortcutBindings {
-  start: string;
-  stop: string;
+  toggle: string;
+  cancel: string;
 }
 
 export interface ShortcutHandlers {
-  onStart: () => void;
-  onStop: () => void;
+  onToggle: () => void;
+  onCancel: () => void;
 }
 
 export class ShortcutManager {
@@ -17,9 +17,9 @@ export class ShortcutManager {
 
   apply(bindings: ShortcutBindings): void {
     this.unregisterAll();
-    this.tryRegister(bindings.start, this.handlers.onStart);
-    if (bindings.stop && bindings.stop !== bindings.start) {
-      this.tryRegister(bindings.stop, this.handlers.onStop);
+    this.tryRegister(bindings.toggle, this.handlers.onToggle);
+    if (bindings.cancel && bindings.cancel !== bindings.toggle) {
+      this.tryRegister(bindings.cancel, this.handlers.onCancel);
     }
   }
 

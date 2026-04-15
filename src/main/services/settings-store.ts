@@ -39,8 +39,16 @@ export class SettingsStore extends EventEmitter {
     try {
       if (!existsSync(this.filePath)) return { ...DEFAULT_SETTINGS };
       const raw = readFileSync(this.filePath, 'utf8');
-      const parsed = JSON.parse(raw) as Partial<Settings>;
-      return { ...DEFAULT_SETTINGS, ...parsed };
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      if (typeof parsed['toggleShortcut'] !== 'string' && typeof parsed['startShortcut'] === 'string') {
+        parsed['toggleShortcut'] = parsed['startShortcut'];
+      }
+      if (typeof parsed['cancelShortcut'] !== 'string' && typeof parsed['stopShortcut'] === 'string') {
+        parsed['cancelShortcut'] = parsed['stopShortcut'];
+      }
+      delete parsed['startShortcut'];
+      delete parsed['stopShortcut'];
+      return { ...DEFAULT_SETTINGS, ...parsed } as Settings;
     } catch {
       return { ...DEFAULT_SETTINGS };
     }

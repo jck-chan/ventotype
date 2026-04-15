@@ -55,6 +55,7 @@ app.whenReady().then(() => {
 
   controller.on('requestRecord', () => overlayWindow.sendStart());
   controller.on('requestStopRecord', () => overlayWindow.sendStop());
+  controller.on('requestCancelRecord', () => overlayWindow.sendCancel());
 
   // Register shortcuts from settings, re-register on change.
   applyShortcuts();
@@ -83,14 +84,14 @@ app.on('window-all-closed', () => {
 let shortcuts: ShortcutManager | null = null;
 
 function applyShortcuts(): void {
-  const { startShortcut, stopShortcut } = store.value;
+  const { toggleShortcut, cancelShortcut } = store.value;
 
   if (!shortcuts) {
     shortcuts = new ShortcutManager({
-      onStart: () => controller.toggle(),
-      onStop: () => controller.stop()
+      onToggle: () => controller.toggle(),
+      onCancel: () => controller.cancel()
     });
   }
 
-  shortcuts.apply({ start: startShortcut, stop: stopShortcut });
+  shortcuts.apply({ toggle: toggleShortcut, cancel: cancelShortcut });
 }

@@ -5,6 +5,7 @@ declare global {
     overlayAPI: {
       onStart: (cb: () => void) => void;
       onStop: (cb: () => void) => void;
+      onCancel: (cb: () => void) => void;
       onStateChanged: (cb: (payload: OverlayStatePayload) => void) => void;
       sendAudio: (audio: ArrayBuffer, mimeType: string) => void;
       sendError: (message: string) => void;
@@ -61,7 +62,8 @@ async function startRecording(): Promise<void> {
   }
 }
 
-async function stopRecording(): Promise<void> {
+/** Stop the mic, build blob, send to main for transcription. */
+async function finishRecording(): Promise<void> {
   if (!recorder || recorder.state === 'inactive') return;
 
   await new Promise<void>((resolve) => {
@@ -73,6 +75,24 @@ async function stopRecording(): Promise<void> {
   const blob = new Blob(chunks, { type: activeMimeType });
   const buffer = await blob.arrayBuffer();
   window.overlayAPI.sendAudio(buffer, activeMimeType);
+  recorder = null;
+  chunks = [];
+}
+
+/** Stop the mic and discard audio — cancel shortcut; no transcription. */
+async function cancelRecording(): Promise<void> {
+  if (!recorder || recorder.state === 'inactive') {
+    recorder = null;
+    chunks = [];
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    recorder!.onstop = () => resolve();
+    recorder!.stop();
+    recorder!.stream.getTracks().forEach((t) => t.stop());
+  });
+
   recorder = null;
   chunks = [];
 }
@@ -100,7 +120,13 @@ window.overlayAPI.onStart(() => {
 });
 
 window.overlayAPI.onStop(() => {
-  stopRecording().catch((err) =>
+  finishRecording().catch((err) =>
+    window.overlayAPI.sendError((err as Error).message)
+  );
+});
+
+window.overlayAPI.onCancel(() => {
+  cancelRecording().catch((err) =>
     window.overlayAPI.sendError((err as Error).message)
   );
 });

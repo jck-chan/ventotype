@@ -7,6 +7,7 @@ type ControllerEvents = {
   stateChanged: (state: DictationState, message?: string) => void;
   requestRecord: () => void;
   requestStopRecord: () => void;
+  requestCancelRecord: () => void;
 };
 
 export class DictationController extends EventEmitter {
@@ -33,11 +34,14 @@ export class DictationController extends EventEmitter {
     }
   }
 
-  /** Dedicated stop shortcut: stop if currently recording. */
-  stop(): void {
-    if (this.state === 'recording') {
-      this.emit('requestStopRecord');
-    }
+  /**
+   * Cancel shortcut: discard the current recording — no transcription, back to idle.
+   * (Contrast: toggle while recording finishes the take and runs Whisper.)
+   */
+  cancel(): void {
+    if (this.state !== 'recording') return;
+    this.emit('requestCancelRecord');
+    this.setState('idle');
   }
 
   async handleAudio(audio: ArrayBuffer, mimeType: string): Promise<void> {

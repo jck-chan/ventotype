@@ -77,9 +77,14 @@ export class OverlayWindow {
     this.win?.webContents.send(IPC.Dictation.Start);
   }
 
-  /** Tell the overlay renderer to stop audio capture and ship the blob. */
+  /** Tell the overlay renderer to stop audio capture and ship the blob for transcription. */
   sendStop(): void {
     this.win?.webContents.send(IPC.Dictation.Stop);
+  }
+
+  /** Tell the overlay renderer to stop capture and discard audio (cancel). */
+  sendCancel(): void {
+    this.win?.webContents.send(IPC.Dictation.Cancel);
   }
 
   /** Send dictation state to overlay renderer so it can update the icon. */

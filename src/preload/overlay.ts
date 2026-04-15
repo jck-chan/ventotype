@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   onStop: (cb: () => void): void => {
     ipcRenderer.on('dictation:stop', cb);
   },
+  onCancel: (cb: () => void): void => {
+    ipcRenderer.on('dictation:cancel', cb);
+  },
   onStateChanged: (cb: (payload: unknown) => void): void => {
     ipcRenderer.on('dictation:state-changed', (_e, payload: unknown) => cb(payload));
   },
