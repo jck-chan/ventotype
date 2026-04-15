@@ -20,7 +20,7 @@ export class SettingsWindow {
       minWidth: 480,
       minHeight: 520,
       show: false,
-      title: 'Voratype',
+      title: 'VentoType',
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
       backgroundColor: '#0f0f11',
       autoHideMenuBar: true,

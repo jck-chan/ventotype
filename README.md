@@ -1,4 +1,4 @@
-# Voratype
+# VentoType
 
 Background dictation app for macOS and Windows. Press a global shortcut, speak, and your words appear wherever the cursor is — powered by any OpenAI-compatible Whisper endpoint.
 
@@ -58,15 +58,15 @@ On first run, macOS will prompt for:
 1. **Microphone** — required for recording.
 2. **Accessibility** — required for the auto-paste (simulated Cmd+V). Grant it in *System Settings → Privacy & Security → Accessibility*.
 
-If auto-paste doesn't work, check the Accessibility permission for Voratype (or your terminal/Electron process during development).
+If auto-paste doesn't work, check the Accessibility permission for VentoType (or your terminal/Electron process during development).
 
 ## Typing approach
 
-Voratype saves your clipboard, writes the transcript to it, simulates a paste keystroke (Cmd+V / Ctrl+V via OS-native tools), then restores your original clipboard. This works correctly for any language — Chinese, Japanese, Arabic, etc. — without needing to switch keyboard input method.
+VentoType saves your clipboard, writes the transcript to it, simulates a paste keystroke (Cmd+V / Ctrl+V via OS-native tools), then restores your original clipboard. This works correctly for any language — Chinese, Japanese, Arabic, etc. — without needing to switch keyboard input method.
 
 ## No dock / taskbar icon
 
-Voratype runs silently in the background. To open Settings:
+VentoType runs silently in the background. To open Settings:
 
 - **Launch the app again** while it's already running (double-click the .app/.exe).
 - During development: the Settings window opens automatically on `npm run dev`.

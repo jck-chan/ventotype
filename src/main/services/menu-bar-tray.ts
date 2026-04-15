@@ -43,7 +43,7 @@ function loadTrayIcon(): Electron.NativeImage {
     return img;
   }
   throw new Error(
-    `Voratype: tray icon not found (resources/${TRAY_ICON_FILE}). Tried:\n${trayIconPathCandidates().join('\n')}`
+    `VentoType: tray icon not found (resources/${TRAY_ICON_FILE}). Tried:\n${trayIconPathCandidates().join('\n')}`
   );
 }
 
@@ -52,11 +52,11 @@ function loadTrayIcon(): Electron.NativeImage {
  */
 export function createMenuBarTray(openSettings: () => void): Tray {
   const tray = new Tray(loadTrayIcon());
-  tray.setToolTip('Voratype');
+  tray.setToolTip('VentoType');
   const menu = Menu.buildFromTemplate([
     { label: 'Settings…', click: () => openSettings() },
     { type: 'separator' },
-    { label: 'Quit Voratype', click: () => app.quit() }
+    { label: 'Quit VentoType', click: () => app.quit() }
   ]);
   tray.setContextMenu(menu);
   return tray;

@@ -1,5 +1,5 @@
 {
-  "name": "voratype",
+  "name": "ventotype",
   "version": "0.1.0",
   "description": "Background dictation app powered by any OpenAI-compatible Whisper endpoint.",
   "main": "out/main/index.js",
@@ -24,8 +24,8 @@
     "vite": "^5.2.0"
   },
   "build": {
-    "appId": "com.voratype.app",
-    "productName": "Voratype",
+    "appId": "com.ventotype.app",
+    "productName": "VentoType",
     "files": [
       "out/**/*",
       "resources/**/*"
@@ -33,7 +33,7 @@
     "mac": {
       "category": "public.app-category.productivity",
       "extendInfo": {
-        "NSMicrophoneUsageDescription": "Voratype needs microphone access to record dictation.",
+        "NSMicrophoneUsageDescription": "VentoType needs microphone access to record dictation.",
         "LSUIElement": true
       }
     },
