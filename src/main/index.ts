@@ -1,9 +1,10 @@
-import { app, globalShortcut } from 'electron';
+import { app, globalShortcut, type Tray } from 'electron';
 import { SettingsStore } from './services/settings-store';
 import { ShortcutManager } from './services/shortcuts';
 import { Transcriber } from './services/transcriber';
 import { Typer } from './services/typer';
 import { DictationController } from './services/dictation-controller';
+import { createMenuBarTray } from './services/menu-bar-tray';
 import { SettingsWindow } from './windows/settings-window';
 import { OverlayWindow } from './windows/overlay-window';
 import { registerIpcHandlers } from './ipc';
@@ -23,6 +24,7 @@ const typer = new Typer();
 const controller = new DictationController(transcriber, typer);
 const settingsWindow = new SettingsWindow();
 const overlayWindow = new OverlayWindow();
+let menuBarTray: Tray | null = null;
 
 app.on('second-instance', () => {
   settingsWindow.show();
@@ -34,6 +36,8 @@ app.whenReady().then(() => {
 
   // Pre-create the overlay so it's ready on first shortcut press.
   overlayWindow.create();
+
+  menuBarTray = createMenuBarTray(() => settingsWindow.show());
 
   // Wire IPC.
   registerIpcHandlers(store, controller);
@@ -57,7 +61,11 @@ app.whenReady().then(() => {
   store.on('change', applyShortcuts);
 });
 
-app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+  menuBarTray?.destroy();
+  menuBarTray = null;
+});
 
 // On macOS, prevent quit when all windows close (app lives in background).
 app.on('window-all-closed', () => {
