@@ -1,0 +1,44 @@
+{
+  "name": "voratype",
+  "version": "0.1.0",
+  "description": "Background dictation app powered by any OpenAI-compatible Whisper endpoint.",
+  "main": "out/main/index.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "pack:mac": "electron-vite build && electron-builder --mac --dir",
+    "pack:win": "electron-vite build && electron-builder --win --dir",
+    "dist:mac": "electron-vite build && electron-builder --mac",
+    "dist:win": "electron-vite build && electron-builder --win"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-vite": "^2.2.0",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
+  },
+  "build": {
+    "appId": "com.voratype.app",
+    "productName": "Voratype",
+    "files": [
+      "out/**/*",
+      "resources/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Voratype needs microphone access to record dictation.",
+        "LSUIElement": true
+      }
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}

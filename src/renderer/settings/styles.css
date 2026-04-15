@@ -1,0 +1,268 @@
+/* ── Reset & base ────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0f0f11;
+  --bg-card:    #17171a;
+  --bg-input:   #1c1c20;
+  --bg-hover:   #222228;
+  --border:     rgba(255,255,255,0.07);
+  --border-focus: rgba(124,58,237,0.6);
+  --text:       #e8e8ec;
+  --text-muted: #6b6b7a;
+  --accent:     #7c3aed;
+  --accent-dim: rgba(124,58,237,0.18);
+  --red:        #ef4444;
+  --green:      #22c55e;
+  --radius:     10px;
+  --radius-sm:  6px;
+  font-size: 14px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout shell ────────────────────────────────────────────────────────── */
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* macOS traffic-light drag region */
+.titlebar {
+  height: 28px;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.header {
+  padding: 4px 24px 20px;
+  flex-shrink: 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-name {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.logo-tagline {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+/* ── Scrollable content ──────────────────────────────────────────────────── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.content::-webkit-scrollbar { width: 4px; }
+.content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Section ─────────────────────────────────────────────────────────────── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Fields ──────────────────────────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.field-row {
+  display: flex;
+  gap: 14px;
+}
+
+label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.label-hint {
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: inherit;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 140ms, background 140ms;
+  -webkit-app-region: no-drag;
+}
+
+input::placeholder { color: var(--text-muted); }
+
+input:hover { border-color: rgba(255,255,255,0.12); }
+
+input:focus {
+  border-color: var(--border-focus);
+  background: var(--bg-hover);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+/* ── Password reveal wrapper ─────────────────────────────────────────────── */
+.input-wrapper {
+  position: relative;
+  display: flex;
+}
+
+.input-wrapper input { padding-right: 38px; }
+
+.reveal-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 140ms;
+  -webkit-app-region: no-drag;
+}
+
+.reveal-btn:hover { color: var(--text); }
+
+/* ── Shortcut capture ────────────────────────────────────────────────────── */
+.shortcut-input-wrap {
+  position: relative;
+  display: flex;
+}
+
+.shortcut-input {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  padding-right: 32px;
+  letter-spacing: 0.02em;
+}
+
+.shortcut-input.capturing {
+  border-color: var(--border-focus);
+  background: var(--bg-hover);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.shortcut-input.capturing::placeholder { color: var(--accent); opacity: 0.8; }
+
+.clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 140ms;
+  -webkit-app-region: no-drag;
+}
+
+.clear-btn:hover { color: var(--red); }
+
+.hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: -4px;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  gap: 12px;
+}
+
+.status-msg {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  transition: color 300ms, opacity 300ms;
+  min-height: 18px;
+}
+
+.status-msg.ok  { color: var(--green); }
+.status-msg.err { color: var(--red);   }
+
+/* ── Save button ─────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: background 140ms, transform 80ms, opacity 140ms;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+
+.btn-primary:hover  { background: #6d28d9; }
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* ── Utility ─────────────────────────────────────────────────────────────── */
+.hidden { display: none !important; }

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voratype</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="root">
+      <!-- Drag region for frameless title bar on macOS -->
+      <div class="titlebar" data-drag-region></div>
+
+      <header class="header">
+        <div class="logo">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <rect width="28" height="28" rx="8" fill="url(#grad)"/>
+            <path d="M9 9h10M9 14h7M9 19h5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="grad" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#7c3aed"/>
+                <stop offset="100%" stop-color="#4f46e5"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <span class="logo-name">Voratype</span>
+        </div>
+        <p class="logo-tagline">AI dictation, anywhere.</p>
+      </header>
+
+      <main class="content">
+        <!-- ── API section ── -->
+        <section class="section">
+          <h2 class="section-title">Whisper endpoint</h2>
+
+          <div class="field">
+            <label for="baseURL">Base URL</label>
+            <input
+              id="baseURL"
+              type="url"
+              placeholder="https://api.openai.com/v1"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="field">
+            <label for="apiKey">API key</label>
+            <div class="input-wrapper">
+              <input
+                id="apiKey"
+                type="password"
+                placeholder="sk-••••••••"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="reveal-btn" id="revealKey" title="Show / hide">
+                <svg id="eye-show" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="1.8"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+                </svg>
+                <svg id="eye-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" class="hidden">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="model">Model</label>
+              <input
+                id="model"
+                type="text"
+                placeholder="whisper-1"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <div class="field">
+              <label for="language">Language <span class="label-hint">(optional)</span></label>
+              <input
+                id="language"
+                type="text"
+                placeholder="auto-detect"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Shortcuts section ── -->
+        <section class="section">
+          <h2 class="section-title">Shortcuts</h2>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="startShortcut">Start / toggle dictation</label>
+              <div class="shortcut-input-wrap">
+                <input
+                  id="startShortcut"
+                  type="text"
+                  placeholder="Click to record…"
+                  readonly
+                  class="shortcut-input"
+                />
+                <button class="clear-btn" data-target="startShortcut" title="Clear">×</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="stopShortcut">Stop dictation</label>
+              <div class="shortcut-input-wrap">
+                <input
+                  id="stopShortcut"
+                  type="text"
+                  placeholder="Click to record…"
+                  readonly
+                  class="shortcut-input"
+                />
+                <button class="clear-btn" data-target="stopShortcut" title="Clear">×</button>
+              </div>
+            </div>
+          </div>
+          <p class="hint">Click a field, then press your desired key combination.</p>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span id="status" class="status-msg" aria-live="polite"></span>
+        <button id="saveBtn" class="btn-primary">Save settings</button>
+      </footer>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
