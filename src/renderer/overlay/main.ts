@@ -3,6 +3,7 @@ import { OverlayStatePayload } from '@shared/types';
 declare global {
   interface Window {
     overlayAPI: {
+      platform: string;
       onStart: (cb: () => void) => void;
       onStop: (cb: () => void) => void;
       onCancel: (cb: () => void) => void;
@@ -12,6 +13,8 @@ declare global {
     };
   }
 }
+
+document.documentElement.dataset.platform = window.overlayAPI.platform;
 
 // ── Elements ─────────────────────────────────────────────────────────────────
 const badge = document.getElementById('badge')!;

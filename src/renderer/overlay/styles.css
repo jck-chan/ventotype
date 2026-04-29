@@ -22,6 +22,9 @@ html, body {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  /* Isolate compositing to the circle — prevents backdrop-filter from
+     expanding the painted region to the full window rect on Windows. */
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,4 +71,15 @@ html, body {
 @keyframes pulse {
   0%, 100% { r: 4; opacity: 1; }
   50%       { r: 5.5; opacity: 0.75; }
+}
+
+/* On Windows, backdrop-filter in a transparent Electron window forces Chromium
+   to composite the full element bounding-box as an opaque surface, making the
+   area outside the circle visible as a translucent rectangle. Disabling it keeps
+   the circular shape intact; the slightly-raised opacity compensates for the
+   missing blur depth. */
+[data-platform="win32"] .badge {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(15, 15, 17, 0.96);
 }
