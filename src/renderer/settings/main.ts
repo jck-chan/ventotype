@@ -19,7 +19,8 @@ const fields = {
   model:         $<HTMLInputElement>('model'),
   language:      $<HTMLInputElement>('language'),
   toggleShortcut: $<HTMLInputElement>('toggleShortcut'),
-  cancelShortcut: $<HTMLInputElement>('cancelShortcut')
+  cancelShortcut: $<HTMLInputElement>('cancelShortcut'),
+  warmUpOnRecord: $<HTMLInputElement>('warmUpOnRecord')
 };
 
 const saveBtn    = $<HTMLButtonElement>('saveBtn');
@@ -38,6 +39,7 @@ async function load(): Promise<void> {
     fields.language.value      = s.language      ?? '';
     fields.toggleShortcut.value = s.toggleShortcut ?? '';
     fields.cancelShortcut.value = s.cancelShortcut ?? '';
+    fields.warmUpOnRecord.checked = s.warmUpOnRecord ?? true;
   } catch (err) {
     showStatus('Failed to load settings.', 'err');
     console.error(err);
@@ -54,7 +56,8 @@ async function save(): Promise<void> {
       model:         fields.model.value.trim() || 'whisper-1',
       language:      fields.language.value.trim(),
       toggleShortcut: fields.toggleShortcut.value.trim(),
-      cancelShortcut: fields.cancelShortcut.value.trim()
+      cancelShortcut: fields.cancelShortcut.value.trim(),
+      warmUpOnRecord: fields.warmUpOnRecord.checked
     });
     showStatus('Settings saved.', 'ok');
   } catch (err) {

@@ -28,6 +28,7 @@ export class DictationController extends EventEmitter {
   toggle(): void {
     if (this.state === 'idle') {
       this.setState('recording');
+      this.transcriber.warmUp();
       this.emit('requestRecord');
     } else if (this.state === 'recording') {
       this.emit('requestStopRecord');

@@ -5,6 +5,7 @@ export interface Settings {
   language: string;
   toggleShortcut: string;
   cancelShortcut: string;
+  warmUpOnRecord: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -13,7 +14,8 @@ export const DEFAULT_SETTINGS: Settings = {
   model: 'whisper-1',
   language: '',
   toggleShortcut: 'Control+H',
-  cancelShortcut: 'Control+Shift+H'
+  cancelShortcut: 'Control+Shift+H',
+  warmUpOnRecord: true
 };
 
 export type DictationState = 'idle' | 'recording' | 'transcribing' | 'typing' | 'error';
