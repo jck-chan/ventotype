@@ -36,6 +36,7 @@ export class OverlayWindow {
     });
 
     win.setAlwaysOnTop(true, 'floating');
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     win.setIgnoreMouseEvents(true);
 
     if (process.env['ELECTRON_RENDERER_URL']) {
