@@ -4,7 +4,7 @@ import { DictationState } from '@shared/types';
 import { IPC } from '@shared/ipc-channels';
 
 const OVERLAY_PRELOAD = join(__dirname, '../preload/overlay.js');
-const FOLLOW_INTERVAL_MS = 16; // ~60fps
+const FOLLOW_INTERVAL_MS = 8; // 125fps
 
 export class OverlayWindow {
   private win: BrowserWindow | null = null;
@@ -36,7 +36,7 @@ export class OverlayWindow {
       }
     });
 
-    win.setAlwaysOnTop(true, 'floating');
+    win.setAlwaysOnTop(true, 'screen-saver');
     win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     win.setIgnoreMouseEvents(true);
 
