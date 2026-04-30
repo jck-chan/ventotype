@@ -8,22 +8,31 @@
   </head>
   <body>
     <div id="badge" class="badge">
-      <!-- Icon is swapped via JS based on state -->
-      <svg id="icon-record" class="icon" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="7" fill="currentColor" opacity="0.15"/>
-        <circle cx="12" cy="12" r="4" fill="#ef4444"/>
+      <!-- Recording: breathing core + two ripple rings -->
+      <svg id="icon-record" class="icon" viewBox="0 0 24 24" overflow="visible">
+        <circle cx="12" cy="12" r="3" class="core" fill="#4ade80" stroke="none" />
+        <circle cx="12" cy="12" r="7" class="ring ring-1" />
+        <circle cx="12" cy="12" r="11" class="ring ring-2" />
       </svg>
-      <svg id="icon-loading" class="icon hidden" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-opacity="0.2"/>
-        <path d="M12 3 a9 9 0 0 1 9 9" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"/>
+
+      <!-- Transcribing: spinning arc pair -->
+      <svg id="icon-loading" class="icon hidden" viewBox="0 0 24 24" overflow="visible">
+        <path d="M12 4 A 8 8 0 0 1 20 12" class="arc arc-1" />
+        <path d="M12 20 A 8 8 0 0 1 4 12" class="arc arc-2" />
       </svg>
-      <svg id="icon-typing" class="icon hidden" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="7" width="18" height="10" rx="2" stroke="#34d399" stroke-width="1.5"/>
-        <path d="M7 12h2M11 12h2M15 12h2" stroke="#34d399" stroke-width="1.5" stroke-linecap="round"/>
+
+      <!-- Typing: three flowing lines -->
+      <svg id="icon-typing" class="icon hidden" viewBox="0 0 24 24" overflow="visible">
+        <line x1="3" y1="8"  x2="21" y2="8"  class="stream stream-1" />
+        <line x1="3" y1="12" x2="18" y2="12" class="stream stream-2" />
+        <line x1="3" y1="16" x2="20" y2="16" class="stream stream-3" />
       </svg>
-      <svg id="icon-error" class="icon hidden" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="9" stroke="#f87171" stroke-width="1.5"/>
-        <path d="M12 8v4M12 16h.01" stroke="#f87171" stroke-width="1.5" stroke-linecap="round"/>
+
+      <!-- Error: circle with exclamation -->
+      <svg id="icon-error" class="icon hidden" viewBox="0 0 24 24" overflow="visible">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="7" x2="12" y2="13" />
+        <circle cx="12" cy="16.5" r="1.25" fill="#f87171" stroke="none" />
       </svg>
     </div>
     <script type="module" src="./main.ts"></script>

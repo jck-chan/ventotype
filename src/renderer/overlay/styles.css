@@ -11,28 +11,27 @@ html, body {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
-}
-
-.badge {
-  width: 44px;
-  height: 44px;
-  margin: 4px;
-  border-radius: 50%;
-  background: rgba(15, 15, 17, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  /* Isolate compositing to the circle — prevents backdrop-filter from
-     expanding the painted region to the full window rect on Windows. */
-  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.badge {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(129, 132, 141, 0.98) 0%, rgba(108, 108, 108, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.45),
-    0 1px 4px rgba(0, 0, 0, 0.3);
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 120ms ease, opacity 120ms ease;
 }
+
 
 .badge.entering {
   animation: pop-in 200ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
@@ -46,7 +45,14 @@ html, body {
 .icon {
   width: 22px;
   height: 22px;
-  color: rgba(255, 255, 255, 0.75);
+  fill: none;
+  stroke: #4ade80;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.6)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
   flex-shrink: 0;
 }
 
@@ -54,33 +60,66 @@ html, body {
   display: none;
 }
 
-/* Spinning loader */
+/* ── Recording ───────────────────────────────────────────────────────────────── */
+#icon-record .core {
+  transform-origin: center;
+  animation: vento-breath 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+#icon-record .ring {
+  transform-origin: center;
+  animation: vento-ripple 2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+}
+
+#icon-record .ring-2 {
+  animation-delay: 0.2s;
+}
+
+@keyframes vento-breath {
+  0%, 100% { transform: scale(0.85); }
+  50%       { transform: scale(1.15); filter: brightness(1.2); }
+}
+
+@keyframes vento-ripple {
+  0%   { transform: scale(0.4); opacity: 0.8; stroke-width: 2px; }
+  100% { transform: scale(1.1); opacity: 0;   stroke-width: 0.5px; }
+}
+
+/* ── Transcribing ────────────────────────────────────────────────────────────── */
 #icon-loading {
-  animation: spin 900ms linear infinite;
+  animation: vento-spin 1.8s cubic-bezier(0.4, 0.1, 0.6, 0.9) infinite;
+  filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.35)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+#icon-loading .arc-1 {
+  stroke: rgba(74, 222, 128, 0.25);
 }
 
-/* Pulsing red dot while recording */
-#icon-record circle:last-child {
-  animation: pulse 1.4s ease-in-out infinite;
+@keyframes vento-spin {
+  100% { transform: rotate(360deg); }
 }
 
-@keyframes pulse {
-  0%, 100% { r: 4; opacity: 1; }
-  50%       { r: 5.5; opacity: 0.75; }
+/* ── Typing ──────────────────────────────────────────────────────────────────── */
+#icon-typing .stream {
+  stroke-dasharray: 8 16;
+  animation: vento-flow linear infinite;
 }
 
-/* On Windows, backdrop-filter in a transparent Electron window forces Chromium
-   to composite the full element bounding-box as an opaque surface, making the
-   area outside the circle visible as a translucent rectangle. Disabling it keeps
-   the circular shape intact; the slightly-raised opacity compensates for the
-   missing blur depth. */
+#icon-typing .stream-1 { animation-duration: 1.2s; opacity: 0.8; }
+#icon-typing .stream-2 { animation-duration: 1.5s; opacity: 1;   }
+#icon-typing .stream-3 { animation-duration: 0.9s; opacity: 0.6; }
+
+@keyframes vento-flow {
+  0%   { stroke-dashoffset: 24; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* ── Error ───────────────────────────────────────────────────────────────────── */
+#icon-error {
+  stroke: #f87171;
+  filter: drop-shadow(0 0 4px rgba(248, 113, 113, 0.5)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}
+
 [data-platform="win32"] .badge {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: rgba(15, 15, 17, 0.96);
   box-shadow: none;
 }

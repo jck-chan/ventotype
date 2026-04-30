@@ -4,7 +4,7 @@ import { DictationState } from '@shared/types';
 import { IPC } from '@shared/ipc-channels';
 
 const OVERLAY_PRELOAD = join(__dirname, '../preload/overlay.js');
-const FOLLOW_INTERVAL_MS = 8; // 125fps
+const FOLLOW_INTERVAL_MS = 4; // 125fps
 
 export class OverlayWindow {
   private win: BrowserWindow | null = null;
@@ -29,6 +29,7 @@ export class OverlayWindow {
       maximizable: false,
       closable: false,
       roundedCorners: true,
+      hasShadow: false,
       webPreferences: {
         preload: OVERLAY_PRELOAD,
         contextIsolation: true,
@@ -114,7 +115,7 @@ export class OverlayWindow {
       return;
     }
     const { x, y } = screen.getCursorScreenPoint();
-    const offset = 18; // distance from pointer tip
+    const offset = 18;
     this.win.setPosition(x + offset, y + offset, false);
   }
 }
