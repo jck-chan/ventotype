@@ -19,6 +19,7 @@ export class OverlayWindow {
       show: false,
       frame: false,
       transparent: true,
+      backgroundColor: '#00000000',
       alwaysOnTop: true,
       skipTaskbar: true,
       focusable: false,
