@@ -8,7 +8,7 @@ declare global {
       onStop: (cb: () => void) => void;
       onCancel: (cb: () => void) => void;
       onStateChanged: (cb: (payload: OverlayStatePayload) => void) => void;
-      sendAudio: (audio: ArrayBuffer, mimeType: string) => void;
+      sendAudio: (audio: ArrayBuffer, mimeType: string, durationMs: number) => void;
       sendError: (message: string) => void;
     };
   }
@@ -29,6 +29,7 @@ const icons: Record<string, HTMLElement | null> = {
 let recorder: MediaRecorder | null = null;
 let chunks: Blob[] = [];
 let activeMimeType = 'audio/webm';
+let recordStartTime = 0;
 
 function showIcon(name: keyof typeof icons): void {
   for (const [key, el] of Object.entries(icons)) {
@@ -46,6 +47,7 @@ function triggerPopIn(): void {
 // ── Recording helpers ─────────────────────────────────────────────────────────
 async function startRecording(): Promise<void> {
   chunks = [];
+  recordStartTime = Date.now();
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     const mimeType = getSupportedMimeType();
@@ -77,7 +79,8 @@ async function finishRecording(): Promise<void> {
 
   const blob = new Blob(chunks, { type: activeMimeType });
   const buffer = await blob.arrayBuffer();
-  window.overlayAPI.sendAudio(buffer, activeMimeType);
+  const durationMs = Date.now() - recordStartTime;
+  window.overlayAPI.sendAudio(buffer, activeMimeType, durationMs);
   recorder = null;
   chunks = [];
 }
@@ -150,7 +153,8 @@ window.overlayAPI.onStateChanged((payload) => {
       showIcon('error');
       break;
     case 'idle':
-      // overlay is hidden by main process; nothing to do here
+      // Reset to record icon so it's correct the moment the window is shown next time.
+      showIcon('record');
       break;
   }
 });

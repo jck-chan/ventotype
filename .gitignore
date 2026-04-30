@@ -7,4 +7,6 @@ dist
 .idea
 .local/*
 .claude/*
+CLAUDE.md
+GEMINI.md
 tmp/*
