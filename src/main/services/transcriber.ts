@@ -13,14 +13,12 @@ export class Transcriber {
   warmUp(): void {
     const s = this.getSettings();
     if (!s.warmUpOnRecord || !s.apiKey || !s.baseURL) return;
-    const t0 = Date.now();
-    this.post(createSilentWav(), 'audio/wav', 'warmup.wav')
-      .then(({ response, endpoint, model }) => {
-        log.info(`[whisper] warm-up → ${endpoint}  model: ${model}`);
-        log.info(`[whisper] warm-up ← ${response.status} ${response.statusText}  (${Date.now() - t0}ms)`);
+    this.post(createSilentWav(), 'audio/wav', undefined)
+      .then(({ response, elapsed }) => {
+        log.info(`[whisper] ← ${response.status} ${response.statusText}  (${elapsed}ms)  0 chars`);
       })
       .catch((err: unknown) => {
-        log.warn(`[whisper] warm-up error  (${Date.now() - t0}ms)`, err);
+        log.warn('[whisper] warm-up network error', err);
       });
   }
 
@@ -29,20 +27,7 @@ export class Transcriber {
     if (!s.apiKey)  throw new Error('Missing API key. Set it in Settings.');
     if (!s.baseURL) throw new Error('Missing base URL. Set it in Settings.');
 
-    const extension = mimeToExtension(input.mimeType);
-    const sizeKB    = (input.audio.byteLength / 1024).toFixed(1);
-
-    const t0 = Date.now();
-    const { response, endpoint, model } = await this.post(
-      input.audio, input.mimeType, `dictation.${extension}`, s.language
-    );
-    const elapsed = Date.now() - t0;
-
-    log.info(
-      `[whisper] → ${endpoint}` +
-      `  model: ${model}  |  lang: ${s.language || 'auto'}  |  fmt: ${extension}` +
-      `  |  size: ${sizeKB} KB`
-    );
+    const { response, elapsed } = await this.post(input.audio, input.mimeType, s.language);
 
     if (!response.ok) {
       const body = await safeText(response);
@@ -53,34 +38,41 @@ export class Transcriber {
     const payload = (await response.json()) as { text?: string };
     const text = (payload.text ?? '').trim();
 
-    log.info(`[whisper] ← ${response.status} OK  (${elapsed}ms)${text ? '' : '  empty transcript'}`);
+    log.info(`[whisper] ← ${response.status} OK  (${elapsed}ms)  ${text.length} chars`);
     return text;
   }
 
-  /** Shared HTTP plumbing for both warm-up and real transcription requests. */
+  /** Shared HTTP plumbing used by both warm-up and transcription. Logs the request. */
   private async post(
     audioData: Uint8Array | ArrayBuffer,
     mimeType: string,
-    filename: string,
-    language?: string
-  ): Promise<{ response: Response; endpoint: string; model: string }> {
-    const s = this.getSettings();
+    language: string | undefined
+  ): Promise<{ response: Response; elapsed: number }> {
+    const s        = this.getSettings();
     const endpoint = `${s.baseURL.replace(/\/$/, '')}/audio/transcriptions`;
     const model    = s.model || 'whisper-1';
+    const ext      = mimeToExtension(mimeType);
+    const sizeKB   = (audioData.byteLength / 1024).toFixed(1);
+
+    log.info(
+      `[whisper] → ${endpoint}` +
+      `  model: ${model}  |  lang: ${language || 'auto'}  |  fmt: ${ext}  |  size: ${sizeKB} KB`
+    );
 
     const form = new FormData();
-    form.append('file', new Blob([audioData], { type: mimeType }), filename);
+    form.append('file', new Blob([audioData], { type: mimeType }), `audio.${ext}`);
     form.append('model', model);
     if (language) form.append('language', language);
     form.append('response_format', 'json');
 
+    const t0       = Date.now();
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { Authorization: `Bearer ${s.apiKey}` },
       body: form
     });
 
-    return { response, endpoint, model };
+    return { response, elapsed: Date.now() - t0 };
   }
 }
 
@@ -93,11 +85,11 @@ function mimeToExtension(mime: string): string {
   return 'webm';
 }
 
-/** Generates 100ms of silence as a minimal valid WAV for warm-up pings. */
+/** Generates the smallest valid WAV (1 silent sample) for warm-up pings. */
 function createSilentWav(): Uint8Array {
   const sampleRate = 16000;
-  const numSamples = sampleRate / 10; // 100 ms
-  const dataSize = numSamples * 2;    // 16-bit PCM mono
+  const numSamples = 1;            // 1 sample — minimum valid WAV
+  const dataSize = numSamples * 2; // 16-bit PCM mono
   const buf = new Uint8Array(44 + dataSize);
   const view = new DataView(buf.buffer);
   // RIFF header
