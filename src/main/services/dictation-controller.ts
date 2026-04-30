@@ -51,6 +51,7 @@ export class DictationController extends EventEmitter {
     this.setState('transcribing');
     try {
       const text = await this.transcriber.transcribe({ audio, mimeType });
+      if (!text) { this.setState('idle'); return; }
       this.setState('typing');
       await this.typer.type(text);
       this.setState('idle');

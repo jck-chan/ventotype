@@ -51,6 +51,7 @@ export class OverlayWindow {
   /** Show overlay and start following cursor. */
   showAndFollow(): void {
     if (!this.win || this.win.isDestroyed()) this.create();
+    this.snapToCursor();   // position correctly before the window is visible
     this.win!.showInactive();
     this.startFollowing();
   }

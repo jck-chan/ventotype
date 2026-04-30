@@ -153,8 +153,7 @@ window.overlayAPI.onStateChanged((payload) => {
       showIcon('error');
       break;
     case 'idle':
-      // Reset to record icon so it's correct the moment the window is shown next time.
-      showIcon('record');
+      // overlay is hidden by main process; nothing to do here
       break;
   }
 });
