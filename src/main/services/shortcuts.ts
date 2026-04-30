@@ -1,4 +1,5 @@
 import { globalShortcut } from 'electron';
+import { log } from './logger';
 
 export interface ShortcutBindings {
   toggle: string;
@@ -35,9 +36,9 @@ export class ShortcutManager {
     try {
       const ok = globalShortcut.register(accelerator, cb);
       if (ok) this.registered.push(accelerator);
-      else console.warn(`[shortcuts] failed to register: ${accelerator}`);
+      else log.warn(`[shortcuts] failed to register: ${accelerator}`);
     } catch (err) {
-      console.warn(`[shortcuts] invalid accelerator "${accelerator}":`, err);
+      log.warn(`[shortcuts] invalid accelerator "${accelerator}":`, err);
     }
   }
 }

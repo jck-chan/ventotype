@@ -13,5 +13,8 @@ export const IPC = {
   },
   Overlay: {
     ShowError: 'overlay:show-error'
+  },
+  Shell: {
+    OpenLogFolder: 'shell:open-log-folder'
   }
 } as const;

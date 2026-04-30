@@ -5,6 +5,7 @@ declare global {
     settingsAPI: {
       get: () => Promise<Settings>;
       set: (patch: Partial<Settings>) => Promise<Settings>;
+      openLogFolder: () => Promise<void>;
     };
   }
 }
@@ -185,6 +186,11 @@ document.querySelectorAll<HTMLButtonElement>('.clear-btn').forEach((btn) => {
       fields[targetId].value = '';
     }
   });
+});
+
+// ── Open log folder ───────────────────────────────────────────────────────────
+$<HTMLButtonElement>('openLogFolder').addEventListener('click', () => {
+  window.settingsAPI.openLogFolder();
 });
 
 // ── Save button ───────────────────────────────────────────────────────────────

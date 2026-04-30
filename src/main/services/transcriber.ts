@@ -1,4 +1,5 @@
 import { Settings } from '@shared/types';
+import { log } from './logger';
 
 export interface TranscribeInput {
   audio: ArrayBuffer;
@@ -10,50 +11,76 @@ export class Transcriber {
 
   /** Fire-and-forget ping that triggers lazy model loading on the server. */
   warmUp(): void {
-    const settings = this.getSettings();
-    if (!settings.warmUpOnRecord || !settings.apiKey || !settings.baseURL) return;
-    const endpoint = `${settings.baseURL.replace(/\/$/, '')}/audio/transcriptions`;
-    const form = new FormData();
-    form.append('file', new Blob([createSilentWav()], { type: 'audio/wav' }), 'warmup.wav');
-    form.append('model', settings.model || 'whisper-1');
-    form.append('response_format', 'json');
-    fetch(endpoint, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${settings.apiKey}` },
-      body: form
-    }).catch(() => { /* warm-up is best-effort */ });
+    const s = this.getSettings();
+    if (!s.warmUpOnRecord || !s.apiKey || !s.baseURL) return;
+    const t0 = Date.now();
+    this.post(createSilentWav(), 'audio/wav', 'warmup.wav')
+      .then(({ response, endpoint, model }) => {
+        log.info(`[whisper] warm-up → ${endpoint}  model: ${model}`);
+        log.info(`[whisper] warm-up ← ${response.status} ${response.statusText}  (${Date.now() - t0}ms)`);
+      })
+      .catch((err: unknown) => {
+        log.warn(`[whisper] warm-up error  (${Date.now() - t0}ms)`, err);
+      });
   }
 
   async transcribe(input: TranscribeInput): Promise<string> {
-    const settings = this.getSettings();
-    if (!settings.apiKey) throw new Error('Missing API key. Set it in Settings.');
-    if (!settings.baseURL) throw new Error('Missing base URL. Set it in Settings.');
+    const s = this.getSettings();
+    if (!s.apiKey)  throw new Error('Missing API key. Set it in Settings.');
+    if (!s.baseURL) throw new Error('Missing base URL. Set it in Settings.');
 
-    const endpoint = `${settings.baseURL.replace(/\/$/, '')}/audio/transcriptions`;
     const extension = mimeToExtension(input.mimeType);
+    const sizeKB    = (input.audio.byteLength / 1024).toFixed(1);
 
-    const form = new FormData();
-    const blob = new Blob([input.audio], { type: input.mimeType });
-    form.append('file', blob, `dictation.${extension}`);
-    form.append('model', settings.model || 'whisper-1');
-    if (settings.language) form.append('language', settings.language);
-    form.append('response_format', 'json');
+    const t0 = Date.now();
+    const { response, endpoint, model } = await this.post(
+      input.audio, input.mimeType, `dictation.${extension}`, s.language
+    );
+    const elapsed = Date.now() - t0;
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${settings.apiKey}` },
-      body: form
-    });
+    log.info(
+      `[whisper] → ${endpoint}` +
+      `  model: ${model}  |  lang: ${s.language || 'auto'}  |  fmt: ${extension}` +
+      `  |  size: ${sizeKB} KB`
+    );
 
     if (!response.ok) {
       const body = await safeText(response);
+      log.error(`[whisper] ← ${response.status} ${response.statusText}  (${elapsed}ms)  body: ${body}`);
       throw new Error(`Whisper API ${response.status}: ${body || response.statusText}`);
     }
 
     const payload = (await response.json()) as { text?: string };
     const text = (payload.text ?? '').trim();
-    if (!text) throw new Error('Whisper returned empty transcript.');
+
+    log.info(`[whisper] ← ${response.status} OK  (${elapsed}ms)${text ? '' : '  empty transcript'}`);
     return text;
+  }
+
+  /** Shared HTTP plumbing for both warm-up and real transcription requests. */
+  private async post(
+    audioData: Uint8Array | ArrayBuffer,
+    mimeType: string,
+    filename: string,
+    language?: string
+  ): Promise<{ response: Response; endpoint: string; model: string }> {
+    const s = this.getSettings();
+    const endpoint = `${s.baseURL.replace(/\/$/, '')}/audio/transcriptions`;
+    const model    = s.model || 'whisper-1';
+
+    const form = new FormData();
+    form.append('file', new Blob([audioData], { type: mimeType }), filename);
+    form.append('model', model);
+    if (language) form.append('language', language);
+    form.append('response_format', 'json');
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${s.apiKey}` },
+      body: form
+    });
+
+    return { response, endpoint, model };
   }
 }
 

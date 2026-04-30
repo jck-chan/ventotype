@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { DictationState } from '@shared/types';
 import { Transcriber } from './transcriber';
 import { Typer } from './typer';
+import { log } from './logger';
 
 type ControllerEvents = {
   stateChanged: (state: DictationState, message?: string) => void;
@@ -55,7 +56,7 @@ export class DictationController extends EventEmitter {
       this.setState('idle');
     } catch (err) {
       const message = (err as Error).message || 'Dictation failed.';
-      console.error('[dictation]', message);
+      log.error('[dictation]', err);
       this.setState('error', message);
       setTimeout(() => {
         if (this.state === 'error') this.setState('idle');
@@ -64,7 +65,7 @@ export class DictationController extends EventEmitter {
   }
 
   handleRecordError(message: string): void {
-    console.error('[dictation] recorder error:', message);
+    log.error('[dictation] recorder error:', message);
     this.setState('error', message);
     setTimeout(() => {
       if (this.state === 'error') this.setState('idle');

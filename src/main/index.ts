@@ -1,4 +1,5 @@
 import { app, globalShortcut, type Tray } from 'electron';
+import { log } from './services/logger';
 import { SettingsStore } from './services/settings-store';
 import { ShortcutManager } from './services/shortcuts';
 import { Transcriber } from './services/transcriber';
@@ -31,6 +32,8 @@ app.on('second-instance', () => {
 });
 
 app.whenReady().then(() => {
+  log.init();
+
   // Hide dock/taskbar — this app lives entirely in the background.
   if (process.platform === 'darwin') app.dock?.hide();
 

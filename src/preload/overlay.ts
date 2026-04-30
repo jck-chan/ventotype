@@ -19,8 +19,8 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   onStateChanged: (cb: (payload: unknown) => void): void => {
     ipcRenderer.on('dictation:state-changed', (_e, payload: unknown) => cb(payload));
   },
-  sendAudio: (audio: ArrayBuffer, mimeType: string): void => {
-    ipcRenderer.send('dictation:audio-blob', audio, mimeType);
+  sendAudio: (audio: ArrayBuffer, mimeType: string, durationMs: number): void => {
+    ipcRenderer.send('dictation:audio-blob', audio, mimeType, durationMs);
   },
   sendError: (message: string): void => {
     ipcRenderer.send('dictation:record-error', message);
