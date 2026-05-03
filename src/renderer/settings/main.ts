@@ -6,6 +6,7 @@ declare global {
       get: () => Promise<Settings>;
       set: (patch: Partial<Settings>) => Promise<Settings>;
       openLogFolder: () => Promise<void>;
+      listModels: (baseURL: string, apiKey: string) => Promise<string[]>;
     };
   }
 }
@@ -24,11 +25,14 @@ const fields = {
   warmUpOnRecord: $<HTMLInputElement>('warmUpOnRecord')
 };
 
-const saveBtn    = $<HTMLButtonElement>('saveBtn');
-const statusEl   = $<HTMLSpanElement>('status');
-const revealBtn  = $<HTMLButtonElement>('revealKey');
-const eyeShow    = $('eye-show');
-const eyeHide    = $('eye-hide');
+const saveBtn        = $<HTMLButtonElement>('saveBtn');
+const statusEl       = $<HTMLSpanElement>('status');
+const revealBtn      = $<HTMLButtonElement>('revealKey');
+const eyeShow        = $('eye-show');
+const eyeHide        = $('eye-hide');
+const refreshModels  = $<HTMLButtonElement>('refreshModels');
+const modelDropdown  = $<HTMLUListElement>('model-dropdown');
+const refreshIcon    = $('refresh-icon');
 
 // ── Load ──────────────────────────────────────────────────────────────────────
 async function load(): Promise<void> {
@@ -186,6 +190,93 @@ document.querySelectorAll<HTMLButtonElement>('.clear-btn').forEach((btn) => {
       fields[targetId].value = '';
     }
   });
+});
+
+// ── Model dropdown ────────────────────────────────────────────────────────────
+let allModels: string[] = [];
+let activeIdx = -1;
+
+function renderDropdown(filter: string): void {
+  const f = filter.toLowerCase();
+  const matches = allModels.filter(m => m.toLowerCase().includes(f));
+
+  modelDropdown.innerHTML = '';
+  activeIdx = -1;
+
+  if (matches.length === 0) { hideDropdown(); return; }
+
+  for (const id of matches) {
+    const li = document.createElement('li');
+    li.className = 'model-option';
+    li.textContent = id;
+    li.addEventListener('mousedown', (e) => {
+      e.preventDefault(); // keep focus on input
+      fields.model.value = id;
+      hideDropdown();
+    });
+    modelDropdown.appendChild(li);
+  }
+
+  modelDropdown.classList.add('open');
+}
+
+function hideDropdown(): void {
+  modelDropdown.classList.remove('open');
+  activeIdx = -1;
+}
+
+function moveActive(delta: number): void {
+  const items = modelDropdown.querySelectorAll<HTMLLIElement>('.model-option');
+  if (!items.length) return;
+  activeIdx = Math.max(0, Math.min(activeIdx + delta, items.length - 1));
+  items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+  items[activeIdx]?.scrollIntoView({ block: 'nearest' });
+}
+
+fields.model.addEventListener('focus', () => {
+  if (allModels.length > 0) renderDropdown(fields.model.value);
+  else fetchModels();
+});
+
+fields.model.addEventListener('blur', () => setTimeout(hideDropdown, 120));
+
+fields.model.addEventListener('input', () => {
+  if (allModels.length > 0) renderDropdown(fields.model.value);
+});
+
+fields.model.addEventListener('keydown', (e) => {
+  if (!modelDropdown.classList.contains('open')) return;
+  if (e.key === 'ArrowDown')  { e.preventDefault(); moveActive(+1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-1); }
+  else if (e.key === 'Enter' && activeIdx >= 0) {
+    e.preventDefault();
+    const item = modelDropdown.querySelectorAll<HTMLLIElement>('.model-option')[activeIdx];
+    if (item) { fields.model.value = item.textContent ?? ''; hideDropdown(); }
+  } else if (e.key === 'Escape') hideDropdown();
+});
+
+async function fetchModels(): Promise<void> {
+  const baseURL = fields.baseURL.value.trim();
+  const apiKey  = fields.apiKey.value.trim();
+  if (!baseURL) return;
+
+  refreshIcon.classList.add('spinning');
+  refreshModels.disabled = true;
+
+  try {
+    allModels = await window.settingsAPI.listModels(baseURL, apiKey);
+    renderDropdown(fields.model.value);
+  } catch {
+    // silently ignore — user can still type manually
+  } finally {
+    refreshIcon.classList.remove('spinning');
+    refreshModels.disabled = false;
+  }
+}
+
+refreshModels.addEventListener('click', () => {
+  allModels = [];
+  fetchModels();
 });
 
 // ── Open log folder ───────────────────────────────────────────────────────────

@@ -28,4 +28,15 @@ export function registerIpcHandlers(
 
   // Open the log folder in Finder / Explorer
   ipcMain.handle(IPC.Shell.OpenLogFolder, () => shell.openPath(log.logDir));
+
+  // Fetch model list from OpenAI-compatible /models endpoint
+  ipcMain.handle(IPC.Api.ListModels, async (_e: IpcMainInvokeEvent, baseURL: string, apiKey: string) => {
+    const url = `${baseURL.replace(/\/$/, '')}/models`;
+    const res = await fetch(url, {
+      headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json() as { data: { id: string }[] };
+    return (data.data ?? []).map((m: { id: string }) => m.id).sort();
+  });
 }

@@ -60,13 +60,23 @@
           <div class="field-row">
             <div class="field">
               <label for="model">Model</label>
-              <input
-                id="model"
-                type="text"
-                placeholder="whisper-1"
-                autocomplete="off"
-                spellcheck="false"
-              />
+              <div class="model-input-wrap">
+                <input
+                  id="model"
+                  type="text"
+                  placeholder="whisper-1"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <ul class="model-dropdown" id="model-dropdown"></ul>
+                <button class="refresh-btn" id="refreshModels" title="Fetch available models">
+                  <svg id="refresh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M23 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="field">
               <label for="language">Language <span class="label-hint">(optional)</span></label>

@@ -16,5 +16,8 @@ export const IPC = {
   },
   Shell: {
     OpenLogFolder: 'shell:open-log-folder'
+  },
+  Api: {
+    ListModels: 'api:list-models'
   }
 } as const;

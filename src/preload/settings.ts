@@ -8,5 +8,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('settingsAPI', {
   get: () => ipcRenderer.invoke('settings:get'),
   set: (patch: unknown) => ipcRenderer.invoke('settings:set', patch),
-  openLogFolder: () => ipcRenderer.invoke('shell:open-log-folder')
+  openLogFolder: () => ipcRenderer.invoke('shell:open-log-folder'),
+  listModels: (baseURL: string, apiKey: string) =>
+    ipcRenderer.invoke('api:list-models', baseURL, apiKey)
 });
