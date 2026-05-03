@@ -4,11 +4,12 @@ import { DictationState } from '@shared/types';
 import { IPC } from '@shared/ipc-channels';
 
 const OVERLAY_PRELOAD = join(__dirname, '../preload/overlay.js');
-const FOLLOW_INTERVAL_MS = 4; // 125fps
+const FOLLOW_INTERVAL_MS = 8; // 125fps
 
 export class OverlayWindow {
   private win: BrowserWindow | null = null;
   private followTimer: ReturnType<typeof setInterval> | null = null;
+  private isShowing = false;
 
   create(): void {
     if (this.win && !this.win.isDestroyed()) return;
@@ -33,13 +34,16 @@ export class OverlayWindow {
       webPreferences: {
         preload: OVERLAY_PRELOAD,
         contextIsolation: true,
-        sandbox: false   // must be false so preload can load its module chunks
+        sandbox: false,          // must be false so preload can load its module chunks
+        backgroundThrottling: false  // prevent Chromium throttling the renderer when unfocused
       }
     });
 
+    // General
     win.setAlwaysOnTop(true, 'screen-saver');
-    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     win.setIgnoreMouseEvents(true);
+    // MacOS, Linux
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
     if (process.env['ELECTRON_RENDERER_URL']) {
       win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/overlay/index.html`);
@@ -55,11 +59,13 @@ export class OverlayWindow {
     if (!this.win || this.win.isDestroyed()) this.create();
     this.snapToCursor();   // position correctly before the window is visible
     this.win!.showInactive();
+    this.isShowing = true;
     this.startFollowing();
   }
 
   /** Hide overlay and stop following cursor. */
   hide(): void {
+    this.isShowing = false;
     this.stopFollowing();
     this.win?.hide();
   }
@@ -115,7 +121,10 @@ export class OverlayWindow {
       return;
     }
     const { x, y } = screen.getCursorScreenPoint();
-    const offset = 18;
-    this.win.setPosition(x + offset, y + offset, false);
+    this.win.setPosition(x + 18, y + 18, false);
+    // Recovery: Windows can hide the window during focus transitions.
+    if (this.isShowing && !this.win.isVisible()) {
+      this.win.showInactive();
+    }
   }
 }
