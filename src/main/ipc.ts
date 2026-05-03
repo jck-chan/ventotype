@@ -1,4 +1,4 @@
-import { ipcMain, IpcMainInvokeEvent, shell } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, shell, app } from 'electron';
 import { IPC } from '@shared/ipc-channels';
 import { Settings } from '@shared/types';
 import { SettingsStore } from './services/settings-store';
@@ -28,6 +28,14 @@ export function registerIpcHandlers(
 
   // Open the log folder in Finder / Explorer
   ipcMain.handle(IPC.Shell.OpenLogFolder, () => shell.openPath(log.logDir));
+
+  // Login item (open at login)
+  ipcMain.handle(IPC.App.GetLoginItem, () =>
+    app.getLoginItemSettings().openAtLogin
+  );
+  ipcMain.handle(IPC.App.SetLoginItem, (_e: IpcMainInvokeEvent, enable: boolean) => {
+    app.setLoginItemSettings({ openAtLogin: enable });
+  });
 
   // Fetch model list from OpenAI-compatible /models endpoint
   ipcMain.handle(IPC.Api.ListModels, async (_e: IpcMainInvokeEvent, baseURL: string, apiKey: string) => {

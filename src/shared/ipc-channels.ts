@@ -19,5 +19,9 @@ export const IPC = {
   },
   Api: {
     ListModels: 'api:list-models'
+  },
+  App: {
+    GetLoginItem: 'app:get-login-item',
+    SetLoginItem: 'app:set-login-item'
   }
 } as const;

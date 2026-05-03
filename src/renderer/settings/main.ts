@@ -7,6 +7,8 @@ declare global {
       set: (patch: Partial<Settings>) => Promise<Settings>;
       openLogFolder: () => Promise<void>;
       listModels: (baseURL: string, apiKey: string) => Promise<string[]>;
+      getLoginItem: () => Promise<boolean>;
+      setLoginItem: (enable: boolean) => Promise<void>;
     };
   }
 }
@@ -22,7 +24,8 @@ const fields = {
   language:      $<HTMLInputElement>('language'),
   toggleShortcut: $<HTMLInputElement>('toggleShortcut'),
   cancelShortcut: $<HTMLInputElement>('cancelShortcut'),
-  warmUpOnRecord: $<HTMLInputElement>('warmUpOnRecord')
+  warmUpOnRecord: $<HTMLInputElement>('warmUpOnRecord'),
+  openAtLogin:   $<HTMLInputElement>('openAtLogin')
 };
 
 const saveBtn        = $<HTMLButtonElement>('saveBtn');
@@ -37,14 +40,18 @@ const refreshIcon    = $('refresh-icon');
 // ── Load ──────────────────────────────────────────────────────────────────────
 async function load(): Promise<void> {
   try {
-    const s = await window.settingsAPI.get();
-    fields.baseURL.value       = s.baseURL       ?? '';
-    fields.apiKey.value        = s.apiKey        ?? '';
-    fields.model.value         = s.model         ?? '';
-    fields.language.value      = s.language      ?? '';
+    const [s, openAtLogin] = await Promise.all([
+      window.settingsAPI.get(),
+      window.settingsAPI.getLoginItem()
+    ]);
+    fields.baseURL.value        = s.baseURL        ?? '';
+    fields.apiKey.value         = s.apiKey         ?? '';
+    fields.model.value          = s.model          ?? '';
+    fields.language.value       = s.language       ?? '';
     fields.toggleShortcut.value = s.toggleShortcut ?? '';
     fields.cancelShortcut.value = s.cancelShortcut ?? '';
     fields.warmUpOnRecord.checked = s.warmUpOnRecord ?? true;
+    fields.openAtLogin.checked    = openAtLogin;
   } catch (err) {
     showStatus('Failed to load settings.', 'err');
     console.error(err);
@@ -55,15 +62,18 @@ async function load(): Promise<void> {
 async function save(): Promise<void> {
   saveBtn.disabled = true;
   try {
-    await window.settingsAPI.set({
-      baseURL:       fields.baseURL.value.trim(),
-      apiKey:        fields.apiKey.value.trim(),
-      model:         fields.model.value.trim() || 'whisper-1',
-      language:      fields.language.value.trim(),
-      toggleShortcut: fields.toggleShortcut.value.trim(),
-      cancelShortcut: fields.cancelShortcut.value.trim(),
-      warmUpOnRecord: fields.warmUpOnRecord.checked
-    });
+    await Promise.all([
+      window.settingsAPI.set({
+        baseURL:        fields.baseURL.value.trim(),
+        apiKey:         fields.apiKey.value.trim(),
+        model:          fields.model.value.trim() || 'whisper-1',
+        language:       fields.language.value.trim(),
+        toggleShortcut: fields.toggleShortcut.value.trim(),
+        cancelShortcut: fields.cancelShortcut.value.trim(),
+        warmUpOnRecord: fields.warmUpOnRecord.checked
+      }),
+      window.settingsAPI.setLoginItem(fields.openAtLogin.checked)
+    ]);
     showStatus('Settings saved.', 'ok');
   } catch (err) {
     showStatus((err as Error).message ?? 'Failed to save.', 'err');
