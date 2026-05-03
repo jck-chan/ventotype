@@ -12,7 +12,7 @@ export class Transcriber {
   /** Fire-and-forget ping that triggers lazy model loading on the server. */
   warmUp(): void {
     const s = this.getSettings();
-    if (!s.warmUpOnRecord || !s.apiKey || !s.baseURL) return;
+    if (!s.warmUpOnRecord || !s.baseURL) return;
     this.post(createSilentWav(), 'audio/wav', undefined)
       .then(({ response, elapsed }) => {
         log.info(`[whisper] ← ${response.status} ${response.statusText}  (${elapsed}ms)  0 chars`);
@@ -24,7 +24,6 @@ export class Transcriber {
 
   async transcribe(input: TranscribeInput): Promise<string> {
     const s = this.getSettings();
-    if (!s.apiKey)  throw new Error('Missing API key. Set it in Settings.');
     if (!s.baseURL) throw new Error('Missing base URL. Set it in Settings.');
 
     const { response, elapsed } = await this.post(input.audio, input.mimeType, s.language);
@@ -65,10 +64,13 @@ export class Transcriber {
     if (language) form.append('language', language);
     form.append('response_format', 'json');
 
+    const headers: Record<string, string> = {};
+    if (s.apiKey) headers['Authorization'] = `Bearer ${s.apiKey}`;
+
     const t0       = Date.now();
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${s.apiKey}` },
+      headers,
       body: form
     });
 
