@@ -179,6 +179,8 @@ addProfileBtn.addEventListener('click', () => {
 
 delProfileBtn.addEventListener('click', () => {
   if (profiles.length <= 1) return;
+  const name = getActive()?.name ?? 'this profile';
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
   profiles = profiles.filter((p) => p.id !== activeId);
   activeId = profiles[0].id;
   renderProfileSelect();
