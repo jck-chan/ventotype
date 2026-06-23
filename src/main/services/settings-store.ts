@@ -2,7 +2,7 @@ import { app } from 'electron';
 import { EventEmitter } from 'node:events';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { DEFAULT_SETTINGS, Settings } from '@shared/types';
+import { DEFAULT_PROFILE, DEFAULT_SETTINGS, EndpointType, Settings } from '@shared/types';
 
 type StoreEvents = {
   change: (next: Settings, prev: Settings) => void;
@@ -48,6 +48,26 @@ export class SettingsStore extends EventEmitter {
       }
       delete parsed['startShortcut'];
       delete parsed['stopShortcut'];
+
+      // Migrate flat single-endpoint settings → a single connection profile.
+      if (!Array.isArray(parsed['profiles'])) {
+        const baseURL = typeof parsed['baseURL'] === 'string' ? parsed['baseURL'] : DEFAULT_PROFILE.baseURL;
+        const type: EndpointType = /(^|\.)openrouter\.ai/i.test(baseURL) ? 'openrouter' : 'openai';
+        parsed['profiles'] = [{
+          ...DEFAULT_PROFILE,
+          type,
+          baseURL,
+          apiKey:   typeof parsed['apiKey']   === 'string' ? parsed['apiKey']   : DEFAULT_PROFILE.apiKey,
+          model:    typeof parsed['model']    === 'string' ? parsed['model']    : DEFAULT_PROFILE.model,
+          language: typeof parsed['language'] === 'string' ? parsed['language'] : DEFAULT_PROFILE.language
+        }];
+        parsed['activeProfileId'] = DEFAULT_PROFILE.id;
+      }
+      delete parsed['baseURL'];
+      delete parsed['apiKey'];
+      delete parsed['model'];
+      delete parsed['language'];
+
       return { ...DEFAULT_SETTINGS, ...parsed } as Settings;
     } catch {
       return { ...DEFAULT_SETTINGS };

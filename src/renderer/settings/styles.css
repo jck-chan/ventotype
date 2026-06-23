@@ -282,6 +282,64 @@ input:focus {
 
 .btn-secondary:hover { background: var(--bg-hover); border-color: rgba(255,255,255,0.12); color: var(--text); }
 
+.btn-secondary:disabled { opacity: 0.4; cursor: default; }
+.btn-secondary:disabled:hover { background: var(--bg-input); border-color: var(--border); color: var(--text-muted); }
+
+/* ── Profile bar ─────────────────────────────────────────────────────────── */
+.profile-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-bar .profile-select { flex: 1; }
+
+/* The selected profile's editable fields, grouped into a contained card so they
+   read as belonging to the profile rather than as top-level settings. */
+.profile-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* ── Selects ─────────────────────────────────────────────────────────────── */
+select.select,
+select.profile-select {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: inherit;
+  padding: 9px 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 140ms, background 140ms;
+  -webkit-app-region: no-drag;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  padding-right: 32px;
+}
+
+select.select:hover,
+select.profile-select:hover { border-color: rgba(255,255,255,0.12); }
+
+select.select:focus,
+select.profile-select:focus {
+  border-color: var(--border-focus);
+  background-color: var(--bg-hover);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+select.select option,
+select.profile-select option { background: var(--bg); color: var(--text); }
+
 /* ── Toggle switch ───────────────────────────────────────────────────────── */
 .toggle-row {
   display: flex;

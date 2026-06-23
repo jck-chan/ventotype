@@ -1,4 +1,10 @@
-import { Settings } from '@shared/types';
+import {
+  ConnectionProfile,
+  DEFAULT_PROFILE,
+  EndpointType,
+  ENDPOINT_DEFAULTS,
+  Settings
+} from '@shared/types';
 
 declare global {
   interface Window {
@@ -18,6 +24,8 @@ const $ = <T extends HTMLElement>(id: string): T =>
   document.getElementById(id) as T;
 
 const fields = {
+  profileName:   $<HTMLInputElement>('profileName'),
+  endpointType:  $<HTMLSelectElement>('endpointType'),
   baseURL:       $<HTMLInputElement>('baseURL'),
   apiKey:        $<HTMLInputElement>('apiKey'),
   model:         $<HTMLInputElement>('model'),
@@ -28,6 +36,10 @@ const fields = {
   openAtLogin:   $<HTMLInputElement>('openAtLogin')
 };
 
+const profileSelect  = $<HTMLSelectElement>('profileSelect');
+const addProfileBtn  = $<HTMLButtonElement>('addProfile');
+const delProfileBtn  = $<HTMLButtonElement>('deleteProfile');
+
 const saveBtn        = $<HTMLButtonElement>('saveBtn');
 const statusEl       = $<HTMLSpanElement>('status');
 const revealBtn      = $<HTMLButtonElement>('revealKey');
@@ -37,6 +49,57 @@ const refreshModels  = $<HTMLButtonElement>('refreshModels');
 const modelDropdown  = $<HTMLUListElement>('model-dropdown');
 const refreshIcon    = $('refresh-icon');
 
+// ── Profiles state ──────────────────────────────────────────────────────────
+// Profiles are held in memory; the form always reflects the active one. Edits
+// are flushed into the active profile object before switching/adding/saving.
+let profiles: ConnectionProfile[] = [];
+let activeId = '';
+
+const genId = (): string =>
+  `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+
+function getActive(): ConnectionProfile {
+  return profiles.find((p) => p.id === activeId) ?? profiles[0];
+}
+
+/** Flush the endpoint form fields back into the active profile object. */
+function syncFormToActive(): void {
+  const p = getActive();
+  if (!p) return;
+  p.name     = fields.profileName.value.trim() || 'Untitled';
+  p.type     = fields.endpointType.value as EndpointType;
+  p.baseURL  = fields.baseURL.value.trim();
+  p.apiKey   = fields.apiKey.value.trim();
+  p.model    = fields.model.value.trim() || DEFAULT_PROFILE.model;
+  p.language = fields.language.value.trim();
+}
+
+/** Populate the endpoint form fields from the active profile. */
+function loadActiveToForm(): void {
+  const p = getActive();
+  if (!p) return;
+  fields.profileName.value  = p.name;
+  fields.endpointType.value = p.type;
+  fields.baseURL.value      = p.baseURL;
+  fields.apiKey.value       = p.apiKey;
+  fields.model.value        = p.model;
+  fields.language.value     = p.language;
+  allModels = []; // model list depends on the profile's endpoint/key
+  hideDropdown();
+}
+
+function renderProfileSelect(): void {
+  profileSelect.innerHTML = '';
+  for (const p of profiles) {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.name;
+    profileSelect.appendChild(opt);
+  }
+  profileSelect.value = activeId;
+  delProfileBtn.disabled = profiles.length <= 1;
+}
+
 // ── Load ──────────────────────────────────────────────────────────────────────
 async function load(): Promise<void> {
   try {
@@ -44,10 +107,15 @@ async function load(): Promise<void> {
       window.settingsAPI.get(),
       window.settingsAPI.getLoginItem()
     ]);
-    fields.baseURL.value        = s.baseURL        ?? '';
-    fields.apiKey.value         = s.apiKey         ?? '';
-    fields.model.value          = s.model          ?? '';
-    fields.language.value       = s.language       ?? '';
+    profiles = (s.profiles ?? []).map((p) => ({ ...p }));
+    if (profiles.length === 0) profiles = [{ ...DEFAULT_PROFILE, id: genId() }];
+    activeId = profiles.some((p) => p.id === s.activeProfileId)
+      ? s.activeProfileId
+      : profiles[0].id;
+
+    renderProfileSelect();
+    loadActiveToForm();
+
     fields.toggleShortcut.value = s.toggleShortcut ?? '';
     fields.cancelShortcut.value = s.cancelShortcut ?? '';
     fields.warmUpOnRecord.checked = s.warmUpOnRecord ?? true;
@@ -60,14 +128,13 @@ async function load(): Promise<void> {
 
 // ── Save ──────────────────────────────────────────────────────────────────────
 async function save(): Promise<void> {
+  syncFormToActive();
   saveBtn.disabled = true;
   try {
     await Promise.all([
       window.settingsAPI.set({
-        baseURL:        fields.baseURL.value.trim(),
-        apiKey:         fields.apiKey.value.trim(),
-        model:          fields.model.value.trim() || 'whisper-1',
-        language:       fields.language.value.trim(),
+        profiles,
+        activeProfileId: activeId,
         toggleShortcut: fields.toggleShortcut.value.trim(),
         cancelShortcut: fields.cancelShortcut.value.trim(),
         warmUpOnRecord: fields.warmUpOnRecord.checked
@@ -82,6 +149,57 @@ async function save(): Promise<void> {
     saveBtn.disabled = false;
   }
 }
+
+// ── Profile actions ───────────────────────────────────────────────────────────
+profileSelect.addEventListener('change', () => {
+  syncFormToActive();
+  activeId = profileSelect.value;
+  renderProfileSelect();
+  loadActiveToForm();
+});
+
+addProfileBtn.addEventListener('click', () => {
+  syncFormToActive();
+  const profile: ConnectionProfile = {
+    ...DEFAULT_PROFILE,
+    id: genId(),
+    name: `Profile ${profiles.length + 1}`
+  };
+  profiles.push(profile);
+  activeId = profile.id;
+  renderProfileSelect();
+  loadActiveToForm();
+  fields.profileName.focus();
+  fields.profileName.select();
+});
+
+delProfileBtn.addEventListener('click', () => {
+  if (profiles.length <= 1) return;
+  profiles = profiles.filter((p) => p.id !== activeId);
+  activeId = profiles[0].id;
+  renderProfileSelect();
+  loadActiveToForm();
+});
+
+// Keep the dropdown label live as the name is typed.
+fields.profileName.addEventListener('input', () => {
+  const opt = profileSelect.querySelector<HTMLOptionElement>(`option[value="${activeId}"]`);
+  if (opt) opt.textContent = fields.profileName.value.trim() || 'Untitled';
+});
+
+// Switching endpoint type swaps in that provider's defaults when the current
+// URL/model are empty or still a known default (i.e. untouched by the user).
+fields.endpointType.addEventListener('change', () => {
+  const type = fields.endpointType.value as EndpointType;
+  const knownURLs   = Object.values(ENDPOINT_DEFAULTS).map((d) => d.baseURL);
+  const knownModels = Object.values(ENDPOINT_DEFAULTS).map((d) => d.model);
+  if (!fields.baseURL.value.trim() || knownURLs.includes(fields.baseURL.value.trim())) {
+    fields.baseURL.value = ENDPOINT_DEFAULTS[type].baseURL;
+  }
+  if (!fields.model.value.trim() || knownModels.includes(fields.model.value.trim())) {
+    fields.model.value = ENDPOINT_DEFAULTS[type].model;
+  }
+});
 
 // ── Status flash ──────────────────────────────────────────────────────────────
 let statusTimer: ReturnType<typeof setTimeout> | null = null;

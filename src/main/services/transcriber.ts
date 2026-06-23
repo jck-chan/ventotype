@@ -1,4 +1,4 @@
-import { Settings } from '@shared/types';
+import { activeProfile, ConnectionProfile, Settings } from '@shared/types';
 import { log } from './logger';
 
 export interface TranscribeInput {
@@ -12,8 +12,9 @@ export class Transcriber {
   /** Fire-and-forget ping that triggers lazy model loading on the server. */
   warmUp(): void {
     const s = this.getSettings();
-    if (!s.warmUpOnRecord || !s.baseURL) return;
-    this.post(createSilentWav(), 'audio/wav', undefined)
+    const profile = activeProfile(s);
+    if (!s.warmUpOnRecord || !profile.baseURL) return;
+    this.post(profile, createSilentWav(), 'audio/wav')
       .then(({ response, elapsed }) => {
         log.info(`[whisper] ← ${response.status} ${response.statusText}  (${elapsed}ms)  0 chars`);
       })
@@ -23,10 +24,10 @@ export class Transcriber {
   }
 
   async transcribe(input: TranscribeInput): Promise<string> {
-    const s = this.getSettings();
-    if (!s.baseURL) throw new Error('Missing base URL. Set it in Settings.');
+    const profile = activeProfile(this.getSettings());
+    if (!profile.baseURL) throw new Error('Missing base URL. Set it in Settings.');
 
-    const { response, elapsed } = await this.post(input.audio, input.mimeType, s.language);
+    const { response, elapsed } = await this.post(profile, input.audio, input.mimeType);
 
     if (!response.ok) {
       const body = await safeText(response);
@@ -43,39 +44,59 @@ export class Transcriber {
 
   /** Shared HTTP plumbing used by both warm-up and transcription. Logs the request. */
   private async post(
+    profile: ConnectionProfile,
     audioData: Uint8Array | ArrayBuffer,
-    mimeType: string,
-    language: string | undefined
+    mimeType: string
   ): Promise<{ response: Response; elapsed: number }> {
-    const s        = this.getSettings();
-    const endpoint = `${s.baseURL.replace(/\/$/, '')}/audio/transcriptions`;
-    const model    = s.model || 'whisper-1';
+    const endpoint = `${profile.baseURL.replace(/\/$/, '')}/audio/transcriptions`;
+    const model    = profile.model || 'whisper-1';
+    const language = profile.language || undefined;
     const ext      = mimeToExtension(mimeType);
     const sizeKB   = (audioData.byteLength / 1024).toFixed(1);
+    const json     = profile.type === 'openrouter';
 
     log.info(
       `[whisper] → ${endpoint}` +
-      `  model: ${model}  |  lang: ${language || 'auto'}  |  fmt: ${ext}  |  size: ${sizeKB} KB`
+      `  model: ${model}  |  lang: ${language || 'auto'}  |  fmt: ${ext}  |  size: ${sizeKB} KB` +
+      `  |  mode: ${json ? 'json' : 'multipart'}`
     );
 
-    const form = new FormData();
-    form.append('file', new Blob([audioData], { type: mimeType }), `audio.${ext}`);
-    form.append('model', model);
-    if (language) form.append('language', language);
-    form.append('response_format', 'json');
-
     const headers: Record<string, string> = {};
-    if (s.apiKey) headers['Authorization'] = `Bearer ${s.apiKey}`;
+    if (profile.apiKey) headers['Authorization'] = `Bearer ${profile.apiKey}`;
+
+    // OpenRouter rejects multipart uploads; it expects base64 audio in a JSON body.
+    // Other OpenAI-compatible servers (OpenAI, Groq, local) use multipart form-data.
+    let body: BodyInit;
+    if (json) {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({
+        model,
+        input_audio: { data: toBase64(audioData), format: ext },
+        ...(language ? { language } : {})
+      });
+    } else {
+      const form = new FormData();
+      form.append('file', new Blob([audioData as BlobPart], { type: mimeType }), `audio.${ext}`);
+      form.append('model', model);
+      if (language) form.append('language', language);
+      form.append('response_format', 'json');
+      body = form;
+    }
 
     const t0       = Date.now();
     const response = await fetch(endpoint, {
       method: 'POST',
       headers,
-      body: form
+      body
     });
 
     return { response, elapsed: Date.now() - t0 };
   }
+}
+
+function toBase64(data: Uint8Array | ArrayBuffer): string {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+  return Buffer.from(bytes).toString('base64');
 }
 
 function mimeToExtension(mime: string): string {
