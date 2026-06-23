@@ -30,12 +30,23 @@ export const DEFAULT_PROFILE: ConnectionProfile = {
   language: ''
 };
 
-export const DEFAULT_SETTINGS: Settings = {
+const BASE_SETTINGS: Settings = {
   profiles: [{ ...DEFAULT_PROFILE }],
   activeProfileId: DEFAULT_PROFILE.id,
   toggleShortcut: 'Control+H',
   cancelShortcut: 'Control+Shift+H',
-  warmUpOnRecord: true
+  warmUpOnRecord: false,
+};
+
+const PLATFORM_OVERRIDES: Partial<Record<NodeJS.Platform, Partial<Settings>>> = {
+  darwin: { toggleShortcut: 'F5', cancelShortcut: 'Shift+F5' }, // consistent with macOS convention of using fn+F5 for dictation
+  win32: { toggleShortcut: 'F9', cancelShortcut: 'Shift+F9' },
+  linux: { toggleShortcut: 'F9', cancelShortcut: 'Shift+F9' },
+};
+
+export const DEFAULT_SETTINGS: Settings = {
+  ...BASE_SETTINGS,
+  ...(PLATFORM_OVERRIDES[process.platform] ?? {}),
 };
 
 /** Sensible defaults to seed a freshly-created profile of each type. */
