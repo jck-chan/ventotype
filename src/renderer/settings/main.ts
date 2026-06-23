@@ -120,6 +120,7 @@ async function load(): Promise<void> {
     fields.cancelShortcut.value = s.cancelShortcut ?? '';
     fields.warmUpOnRecord.checked = s.warmUpOnRecord ?? true;
     fields.openAtLogin.checked    = openAtLogin;
+    markClean();
   } catch (err) {
     showStatus('Failed to load settings.', 'err');
     console.error(err);
@@ -141,6 +142,7 @@ async function save(): Promise<void> {
       }),
       window.settingsAPI.setLoginItem(fields.openAtLogin.checked)
     ]);
+    markClean();
     showStatus('Settings saved.', 'ok');
   } catch (err) {
     showStatus((err as Error).message ?? 'Failed to save.', 'err');
@@ -156,6 +158,7 @@ profileSelect.addEventListener('change', () => {
   activeId = profileSelect.value;
   renderProfileSelect();
   loadActiveToForm();
+  markDirty();
 });
 
 addProfileBtn.addEventListener('click', () => {
@@ -171,6 +174,7 @@ addProfileBtn.addEventListener('click', () => {
   loadActiveToForm();
   fields.profileName.focus();
   fields.profileName.select();
+  markDirty();
 });
 
 delProfileBtn.addEventListener('click', () => {
@@ -179,6 +183,7 @@ delProfileBtn.addEventListener('click', () => {
   activeId = profiles[0].id;
   renderProfileSelect();
   loadActiveToForm();
+  markDirty();
 });
 
 // Keep the dropdown label live as the name is typed.
@@ -200,6 +205,22 @@ fields.endpointType.addEventListener('change', () => {
     fields.model.value = ENDPOINT_DEFAULTS[type].model;
   }
 });
+
+// ── Dirty tracking ────────────────────────────────────────────────────────────
+let isDirty = false;
+
+function markDirty(): void {
+  if (isDirty) return;
+  isDirty = true;
+  document.title = 'VentoType *';
+  saveBtn.textContent = 'Save settings *';
+}
+
+function markClean(): void {
+  isDirty = false;
+  document.title = 'VentoType';
+  saveBtn.textContent = 'Save settings';
+}
 
 // ── Status flash ──────────────────────────────────────────────────────────────
 let statusTimer: ReturnType<typeof setTimeout> | null = null;
@@ -306,6 +327,7 @@ document.addEventListener('keydown', (e) => {
     if (accel) {
       capturingField.value = accel;
       stopCapture(capturingField);
+      markDirty();
     }
   }
 });
@@ -316,6 +338,7 @@ document.querySelectorAll<HTMLButtonElement>('.clear-btn').forEach((btn) => {
     const targetId = btn.dataset['target'] as keyof typeof fields;
     if (targetId && fields[targetId]) {
       fields[targetId].value = '';
+      markDirty();
     }
   });
 });
@@ -341,6 +364,7 @@ function renderDropdown(filter: string): void {
       e.preventDefault(); // keep focus on input
       fields.model.value = id;
       hideDropdown();
+      markDirty();
     });
     modelDropdown.appendChild(li);
   }
@@ -410,6 +434,12 @@ refreshModels.addEventListener('click', () => {
 // ── Open log folder ───────────────────────────────────────────────────────────
 $<HTMLButtonElement>('openLogFolder').addEventListener('click', () => {
   window.settingsAPI.openLogFolder();
+});
+
+// ── Field change listeners (covers direct typing + checkbox toggles) ───────────
+document.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select').forEach((el) => {
+  el.addEventListener('input', markDirty);
+  el.addEventListener('change', markDirty);
 });
 
 // ── Save button ───────────────────────────────────────────────────────────────
