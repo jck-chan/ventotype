@@ -38,16 +38,21 @@ const BASE_SETTINGS: Settings = {
   warmUpOnRecord: false,
 };
 
-const PLATFORM_OVERRIDES: Partial<Record<NodeJS.Platform, Partial<Settings>>> = {
+// Keyed by `process.platform` values. Pure data — no `process` access here so this
+// module stays safe to import from the renderer (no Node globals in the isolated world).
+const PLATFORM_OVERRIDES: Record<string, Partial<Settings>> = {
   darwin: { toggleShortcut: 'F5', cancelShortcut: 'Shift+F5' }, // consistent with macOS convention of using fn+F5 for dictation
   win32: { toggleShortcut: 'F9', cancelShortcut: 'Shift+F9' },
   linux: { toggleShortcut: 'F9', cancelShortcut: 'Shift+F9' },
 };
 
-export const DEFAULT_SETTINGS: Settings = {
-  ...BASE_SETTINGS,
-  ...(PLATFORM_OVERRIDES[process.platform] ?? {}),
-};
+/** Builds platform-appropriate defaults. Call from the main process with `process.platform`. */
+export function defaultSettingsFor(platform: string): Settings {
+  return { ...BASE_SETTINGS, ...(PLATFORM_OVERRIDES[platform] ?? {}) };
+}
+
+/** Platform-agnostic defaults — safe to import in the renderer. */
+export const DEFAULT_SETTINGS: Settings = { ...BASE_SETTINGS };
 
 /** Sensible defaults to seed a freshly-created profile of each type. */
 export const ENDPOINT_DEFAULTS: Record<EndpointType, { baseURL: string; model: string }> = {

@@ -2,7 +2,10 @@ import { app } from 'electron';
 import { EventEmitter } from 'node:events';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { DEFAULT_PROFILE, DEFAULT_SETTINGS, EndpointType, Settings } from '@shared/types';
+import { DEFAULT_PROFILE, defaultSettingsFor, EndpointType, Settings } from '@shared/types';
+
+// Platform-aware defaults, resolved once in the main process where `process` exists.
+const DEFAULTS: Settings = defaultSettingsFor(process.platform);
 
 type StoreEvents = {
   change: (next: Settings, prev: Settings) => void;
@@ -37,7 +40,7 @@ export class SettingsStore extends EventEmitter {
 
   private load(): Settings {
     try {
-      if (!existsSync(this.filePath)) return { ...DEFAULT_SETTINGS };
+      if (!existsSync(this.filePath)) return { ...DEFAULTS };
       const raw = readFileSync(this.filePath, 'utf8');
       const parsed = JSON.parse(raw) as Record<string, unknown>;
       if (typeof parsed['toggleShortcut'] !== 'string' && typeof parsed['startShortcut'] === 'string') {
@@ -68,9 +71,9 @@ export class SettingsStore extends EventEmitter {
       delete parsed['model'];
       delete parsed['language'];
 
-      return { ...DEFAULT_SETTINGS, ...parsed } as Settings;
+      return { ...DEFAULTS, ...parsed } as Settings;
     } catch {
-      return { ...DEFAULT_SETTINGS };
+      return { ...DEFAULTS };
     }
   }
 
