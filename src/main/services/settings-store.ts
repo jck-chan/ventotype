@@ -25,6 +25,11 @@ export class SettingsStore extends EventEmitter {
     return { ...this.current };
   }
 
+  ensureFile(): string {
+    if (!existsSync(this.filePath)) this.save(this.current);
+    return this.filePath;
+  }
+
   update(patch: Partial<Settings>): Settings {
     const prev = this.current;
     const next: Settings = { ...prev, ...patch };

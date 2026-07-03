@@ -15,7 +15,8 @@ export const IPC = {
     ShowError: 'overlay:show-error'
   },
   Shell: {
-    OpenLogFolder: 'shell:open-log-folder'
+    OpenLogFile: 'shell:open-log-file',
+    OpenSettingsFile: 'shell:open-settings-file'
   },
   Api: {
     ListModels: 'api:list-models'

@@ -11,7 +11,8 @@ declare global {
     settingsAPI: {
       get: () => Promise<Settings>;
       set: (patch: Partial<Settings>) => Promise<Settings>;
-      openLogFolder: () => Promise<void>;
+      openLogFile: () => Promise<void>;
+      openSettingsFile: () => Promise<void>;
       listModels: (baseURL: string, apiKey: string, type: EndpointType) => Promise<string[]>;
       getLoginItem: () => Promise<boolean>;
       setLoginItem: (enable: boolean) => Promise<void>;
@@ -433,9 +434,13 @@ refreshModels.addEventListener('click', () => {
   fetchModels();
 });
 
-// ── Open log folder ───────────────────────────────────────────────────────────
-$<HTMLButtonElement>('openLogFolder').addEventListener('click', () => {
-  window.settingsAPI.openLogFolder();
+// ── Open troubleshooting files ────────────────────────────────────────────────
+$<HTMLButtonElement>('openLogFile').addEventListener('click', () => {
+  window.settingsAPI.openLogFile();
+});
+
+$<HTMLButtonElement>('openSettingsFile').addEventListener('click', () => {
+  window.settingsAPI.openSettingsFile();
 });
 
 // ── Field change listeners (covers direct typing + checkbox toggles) ───────────

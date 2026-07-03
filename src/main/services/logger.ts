@@ -30,6 +30,7 @@ class Logger {
   }
 
   get logDir(): string { return this.dir; }
+  get logFile(): string { return this.file; }
 
   info(msg: string, ...args: unknown[]): void { this.write('INFO', msg, args); }
   warn(msg: string, ...args: unknown[]): void  { this.write('WARN', msg, args); }

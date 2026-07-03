@@ -46,8 +46,9 @@ export function registerIpcHandlers(
     controller.handleRecordError(message);
   });
 
-  // Open the log folder in Finder / Explorer
-  ipcMain.handle(IPC.Shell.OpenLogFolder, () => shell.openPath(log.logDir));
+  // Open troubleshooting files in the OS default editor/viewer.
+  ipcMain.handle(IPC.Shell.OpenLogFile, () => shell.openPath(log.logFile));
+  ipcMain.handle(IPC.Shell.OpenSettingsFile, () => shell.openPath(store.ensureFile()));
 
   // Login item (open at login)
   ipcMain.handle(IPC.App.GetLoginItem, () =>
