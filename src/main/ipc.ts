@@ -1,6 +1,6 @@
 import { ipcMain, IpcMainInvokeEvent, shell, app } from 'electron';
 import { IPC } from '@shared/ipc-channels';
-import { EndpointType, Settings } from '@shared/types';
+import { ConnectionProfile, EndpointType, Settings } from '@shared/types';
 import { SettingsStore } from './services/settings-store';
 import { DictationController } from './services/dictation-controller';
 import { log } from './services/logger';
@@ -33,6 +33,11 @@ export function registerIpcHandlers(
   ipcMain.handle(IPC.Settings.Get, () => store.value);
   ipcMain.handle(IPC.Settings.Set, (_e: IpcMainInvokeEvent, patch: Partial<Settings>) =>
     store.update(patch)
+  );
+  ipcMain.handle(
+    IPC.Settings.SaveActiveProfile,
+    (_e: IpcMainInvokeEvent, profile: ConnectionProfile, activeProfileId: string) =>
+      store.updateActiveProfile(profile, activeProfileId)
   );
 
   // Audio blob from overlay renderer after recording stops

@@ -2,7 +2,7 @@ import { app } from 'electron';
 import { EventEmitter } from 'node:events';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { DEFAULT_PROFILE, defaultSettingsFor, EndpointType, Settings } from '@shared/types';
+import { ConnectionProfile, DEFAULT_PROFILE, defaultSettingsFor, EndpointType, Settings } from '@shared/types';
 
 // Platform-aware defaults, resolved once in the main process where `process` exists.
 const DEFAULTS: Settings = defaultSettingsFor(process.platform);
@@ -33,6 +33,18 @@ export class SettingsStore extends EventEmitter {
   update(patch: Partial<Settings>): Settings {
     const prev = this.current;
     const next: Settings = { ...prev, ...patch };
+    this.current = next;
+    this.save(next);
+    this.emit('change', next, prev);
+    return { ...next };
+  }
+
+  updateActiveProfile(profile: ConnectionProfile, activeProfileId: string): Settings {
+    const prev = this.current;
+    const profiles = prev.profiles.some((p) => p.id === profile.id)
+      ? prev.profiles.map((p) => p.id === profile.id ? { ...profile } : p)
+      : [...prev.profiles, { ...profile }];
+    const next: Settings = { ...prev, profiles, activeProfileId };
     this.current = next;
     this.save(next);
     this.emit('change', next, prev);

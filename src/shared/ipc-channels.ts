@@ -1,7 +1,8 @@
 export const IPC = {
   Settings: {
     Get: 'settings:get',
-    Set: 'settings:set'
+    Set: 'settings:set',
+    SaveActiveProfile: 'settings:save-active-profile'
   },
   Dictation: {
     Start: 'dictation:start',

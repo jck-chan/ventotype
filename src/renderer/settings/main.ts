@@ -11,6 +11,7 @@ declare global {
     settingsAPI: {
       get: () => Promise<Settings>;
       set: (patch: Partial<Settings>) => Promise<Settings>;
+      saveActiveProfile: (profile: ConnectionProfile, activeProfileId: string) => Promise<Settings>;
       openLogFile: () => Promise<void>;
       openSettingsFile: () => Promise<void>;
       listModels: (baseURL: string, apiKey: string, type: EndpointType) => Promise<string[]>;
@@ -133,6 +134,7 @@ async function save(): Promise<void> {
   syncFormToActive();
   saveBtn.disabled = true;
   try {
+    await profileSavePromise;
     await Promise.all([
       window.settingsAPI.set({
         profiles,
@@ -153,13 +155,40 @@ async function save(): Promise<void> {
   }
 }
 
+let profileSavePromise: Promise<void> = Promise.resolve();
+
+function saveActiveProfileOnly(profile: ConnectionProfile, activeProfileId: string): void {
+  const savedDirtyVersion = profileDirtyVersion;
+  profileSelect.disabled = true;
+
+  const run = async (): Promise<void> => {
+    try {
+      await window.settingsAPI.saveActiveProfile(profile, activeProfileId);
+      if (profileDirtyVersion === savedDirtyVersion) {
+        profileDirty = false;
+        refreshDirtyState();
+      }
+    } catch (err) {
+      profileDirty = true;
+      refreshDirtyState();
+      showStatus((err as Error).message ?? 'Failed to save profile.', 'err');
+      console.error(err);
+    } finally {
+      profileSelect.disabled = false;
+    }
+  };
+
+  profileSavePromise = profileSavePromise.then(run, run);
+}
+
 // ── Profile actions ───────────────────────────────────────────────────────────
 profileSelect.addEventListener('change', () => {
   syncFormToActive();
+  const profileToSave = { ...getActive() };
   activeId = profileSelect.value;
   renderProfileSelect();
   loadActiveToForm();
-  markDirty();
+  saveActiveProfileOnly(profileToSave, activeId);
 });
 
 addProfileBtn.addEventListener('click', () => {
@@ -175,7 +204,7 @@ addProfileBtn.addEventListener('click', () => {
   loadActiveToForm();
   fields.profileName.focus();
   fields.profileName.select();
-  markDirty();
+  markProfileDirty();
 });
 
 delProfileBtn.addEventListener('click', () => {
@@ -186,7 +215,7 @@ delProfileBtn.addEventListener('click', () => {
   activeId = profiles[0].id;
   renderProfileSelect();
   loadActiveToForm();
-  markDirty();
+  markProfileDirty();
 });
 
 // Keep the dropdown label live as the name is typed.
@@ -210,19 +239,45 @@ fields.endpointType.addEventListener('change', () => {
 });
 
 // ── Dirty tracking ────────────────────────────────────────────────────────────
-let isDirty = false;
+let profileDirty = false;
+let globalDirty = false;
+let profileDirtyVersion = 0;
 
-function markDirty(): void {
-  if (isDirty) return;
-  isDirty = true;
-  document.title = 'VentoType *';
-  saveBtn.textContent = 'Save settings *';
+const PROFILE_FIELD_IDS = new Set<keyof typeof fields>([
+  'profileName',
+  'endpointType',
+  'baseURL',
+  'apiKey',
+  'model',
+  'language'
+]);
+
+function refreshDirtyState(): void {
+  const isDirty = profileDirty || globalDirty;
+  document.title = isDirty ? 'VentoType *' : 'VentoType';
+  saveBtn.textContent = isDirty ? 'Save settings *' : 'Save settings';
+}
+
+function markProfileDirty(): void {
+  profileDirty = true;
+  profileDirtyVersion += 1;
+  refreshDirtyState();
+}
+
+function markGlobalDirty(): void {
+  globalDirty = true;
+  refreshDirtyState();
+}
+
+function markFieldDirty(fieldId: keyof typeof fields): void {
+  if (PROFILE_FIELD_IDS.has(fieldId)) markProfileDirty();
+  else markGlobalDirty();
 }
 
 function markClean(): void {
-  isDirty = false;
-  document.title = 'VentoType';
-  saveBtn.textContent = 'Save settings';
+  profileDirty = false;
+  globalDirty = false;
+  refreshDirtyState();
 }
 
 // ── Status flash ──────────────────────────────────────────────────────────────
@@ -330,7 +385,7 @@ document.addEventListener('keydown', (e) => {
     if (accel) {
       capturingField.value = accel;
       stopCapture(capturingField);
-      markDirty();
+      markGlobalDirty();
     }
   }
 });
@@ -341,7 +396,7 @@ document.querySelectorAll<HTMLButtonElement>('.clear-btn').forEach((btn) => {
     const targetId = btn.dataset['target'] as keyof typeof fields;
     if (targetId && fields[targetId]) {
       fields[targetId].value = '';
-      markDirty();
+      markFieldDirty(targetId);
     }
   });
 });
@@ -367,7 +422,7 @@ function renderDropdown(filter: string): void {
       e.preventDefault(); // keep focus on input
       fields.model.value = id;
       hideDropdown();
-      markDirty();
+      markProfileDirty();
     });
     modelDropdown.appendChild(li);
   }
@@ -445,8 +500,10 @@ $<HTMLButtonElement>('openSettingsFile').addEventListener('click', () => {
 
 // ── Field change listeners (covers direct typing + checkbox toggles) ───────────
 document.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select').forEach((el) => {
-  el.addEventListener('input', markDirty);
-  el.addEventListener('change', markDirty);
+  if (el === profileSelect) return;
+  const markDirtyForField = (): void => markFieldDirty(el.id as keyof typeof fields);
+  el.addEventListener('input', markDirtyForField);
+  el.addEventListener('change', markDirtyForField);
 });
 
 // ── Save button ───────────────────────────────────────────────────────────────

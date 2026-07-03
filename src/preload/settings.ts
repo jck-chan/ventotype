@@ -8,6 +8,8 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('settingsAPI', {
   get: () => ipcRenderer.invoke('settings:get'),
   set: (patch: unknown) => ipcRenderer.invoke('settings:set', patch),
+  saveActiveProfile: (profile: unknown, activeProfileId: unknown) =>
+    ipcRenderer.invoke('settings:save-active-profile', profile, activeProfileId),
   openLogFile: () => ipcRenderer.invoke('shell:open-log-file'),
   openSettingsFile: () => ipcRenderer.invoke('shell:open-settings-file'),
   listModels: (baseURL: string, apiKey: string, type: string) =>
