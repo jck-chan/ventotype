@@ -1,9 +1,29 @@
 import { ipcMain, IpcMainInvokeEvent, shell, app } from 'electron';
 import { IPC } from '@shared/ipc-channels';
-import { Settings } from '@shared/types';
+import { EndpointType, Settings } from '@shared/types';
 import { SettingsStore } from './services/settings-store';
 import { DictationController } from './services/dictation-controller';
 import { log } from './services/logger';
+
+async function listOpenAiModels(baseURL: string, apiKey: string): Promise<string[]> {
+  const url = `${baseURL.replace(/\/$/, '')}/models`;
+  const res = await fetch(url, {
+    headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {}
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json() as { data: { id: string }[] };
+  return (data.data ?? []).map((m: { id: string }) => m.id).sort();
+}
+
+async function listOpenRouterModels(baseURL: string, apiKey: string): Promise<string[]> {
+  const url = `${baseURL.replace(/\/$/, '')}/models?output_modalities=transcription`;
+  const res = await fetch(url, {
+    headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {}
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json() as { data: { id: string }[] };
+  return (data.data ?? []).map((m: { id: string }) => m.id).sort();
+}
 
 export function registerIpcHandlers(
   store: SettingsStore,
@@ -37,14 +57,17 @@ export function registerIpcHandlers(
     app.setLoginItemSettings({ openAtLogin: enable });
   });
 
-  // Fetch model list from OpenAI-compatible /models endpoint
-  ipcMain.handle(IPC.Api.ListModels, async (_e: IpcMainInvokeEvent, baseURL: string, apiKey: string) => {
-    const url = `${baseURL.replace(/\/$/, '')}/models`;
-    const res = await fetch(url, {
-      headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {}
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json() as { data: { id: string }[] };
-    return (data.data ?? []).map((m: { id: string }) => m.id).sort();
-  });
+  // Fetch model list using provider-specific behavior. Keep providers separate
+  // here even when their APIs look similar, since their capabilities will diverge.
+  ipcMain.handle(
+    IPC.Api.ListModels,
+    async (_e: IpcMainInvokeEvent, baseURL: string, apiKey: string, type: EndpointType) => {
+      switch (type) {
+        case 'openai':
+          return listOpenAiModels(baseURL, apiKey);
+        case 'openrouter':
+          return listOpenRouterModels(baseURL, apiKey);
+      }
+    }
+  );
 }

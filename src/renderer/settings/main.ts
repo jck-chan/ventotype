@@ -12,7 +12,7 @@ declare global {
       get: () => Promise<Settings>;
       set: (patch: Partial<Settings>) => Promise<Settings>;
       openLogFolder: () => Promise<void>;
-      listModels: (baseURL: string, apiKey: string) => Promise<string[]>;
+      listModels: (baseURL: string, apiKey: string, type: EndpointType) => Promise<string[]>;
       getLoginItem: () => Promise<boolean>;
       setLoginItem: (enable: boolean) => Promise<void>;
     };
@@ -418,7 +418,7 @@ async function fetchModels(): Promise<void> {
   refreshModels.disabled = true;
 
   try {
-    allModels = await window.settingsAPI.listModels(baseURL, apiKey);
+    allModels = await window.settingsAPI.listModels(baseURL, apiKey, fields.endpointType.value as EndpointType);
     renderDropdown(fields.model.value);
   } catch {
     // silently ignore — user can still type manually

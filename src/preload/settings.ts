@@ -9,8 +9,8 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   get: () => ipcRenderer.invoke('settings:get'),
   set: (patch: unknown) => ipcRenderer.invoke('settings:set', patch),
   openLogFolder: () => ipcRenderer.invoke('shell:open-log-folder'),
-  listModels: (baseURL: string, apiKey: string) =>
-    ipcRenderer.invoke('api:list-models', baseURL, apiKey),
+  listModels: (baseURL: string, apiKey: string, type: string) =>
+    ipcRenderer.invoke('api:list-models', baseURL, apiKey, type),
   getLoginItem: () => ipcRenderer.invoke('app:get-login-item'),
   setLoginItem: (enable: boolean) => ipcRenderer.invoke('app:set-login-item', enable)
 });
