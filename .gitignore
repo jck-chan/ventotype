@@ -5,8 +5,6 @@ dist
 *.log
 .vscode
 .idea
-.local/*
-.claude/*
-CLAUDE.md
-GEMINI.md
-tmp/*
+.local/
+.claude/
+tmp/
