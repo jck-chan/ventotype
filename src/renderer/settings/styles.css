@@ -2,18 +2,21 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:         #0f0f11;
-  --bg-card:    #17171a;
-  --bg-input:   #1c1c20;
-  --bg-hover:   #222228;
-  --border:     rgba(255,255,255,0.07);
-  --border-focus: rgba(124,58,237,0.6);
-  --text:       #e8e8ec;
-  --text-muted: #6b6b7a;
-  --accent:     #7c3aed;
-  --accent-dim: rgba(124,58,237,0.18);
-  --red:        #ef4444;
-  --green:      #22c55e;
+  --bg:         #1d1d1d;
+  --bg-card:    #272727;
+  --bg-input:   #373737;
+  --bg-hover:   #48443e;
+  --border:     rgba(62, 59, 55, 0.1);
+  --border-focus: rgba(237, 173, 54, 0.45);
+  --text:       #d6d3cd;
+  --text-muted: #b3b0ab;
+  --accent:     #d38b39;
+  --accent-hover: #d59e40;
+  --accent-bright: #e4cfb9;
+  --accent-dim: rgba(229, 170, 76, 0.22);
+  --accent-border: rgba(213, 152, 87, 0.35);
+  --red:        #d46b5a;
+  --green:      #7a9a7e;
   --radius:     10px;
   --radius-sm:  6px;
   font-size: 14px;
@@ -78,9 +81,9 @@ html, body {
 }
 
 .tab-btn {
-  background: transparent;
+  background: var(--bg-input);
   color: var(--text-muted);
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 12.5px;
   font-weight: 600;
@@ -92,8 +95,9 @@ html, body {
 }
 
 .tab-btn:hover {
-  background: var(--bg-input);
+  background: var(--bg-hover);
   color: var(--text);
+  border-color: rgba(255,248,240,0.14);
 }
 
 .tab-btn:focus-visible {
@@ -104,8 +108,8 @@ html, body {
 
 .tab-btn.active {
   background: var(--accent-dim);
-  border-color: rgba(124,58,237,0.28);
-  color: var(--text);
+  border-color: var(--accent-border);
+  color: var(--accent-bright);
 }
 
 /* ── Scrollable content ──────────────────────────────────────────────────── */
@@ -189,7 +193,7 @@ input {
 
 input::placeholder { color: var(--text-muted); }
 
-input:hover { border-color: rgba(255,255,255,0.12); }
+input:hover { border-color: rgba(255,248,240,0.12); }
 
 input:focus {
   border-color: var(--border-focus);
@@ -309,7 +313,7 @@ input:focus {
   -webkit-app-region: no-drag;
 }
 
-.btn-primary:hover  { background: #6d28d9; }
+.btn-primary:hover  { background: var(--accent-hover); }
 .btn-primary:active { transform: scale(0.97); }
 .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
@@ -329,7 +333,7 @@ input:focus {
   -webkit-app-region: no-drag;
 }
 
-.btn-secondary:hover { background: var(--bg-hover); border-color: rgba(255,255,255,0.12); color: var(--text); }
+.btn-secondary:hover { background: var(--bg-hover); border-color: rgba(255,248,240,0.12); color: var(--text); }
 
 .btn-secondary:disabled { opacity: 0.4; cursor: default; }
 .btn-secondary:disabled:hover { background: var(--bg-input); border-color: var(--border); color: var(--text-muted); }
@@ -389,7 +393,7 @@ select.profile-select {
 }
 
 select.select:hover,
-select.profile-select:hover { border-color: rgba(255,255,255,0.12); }
+select.profile-select:hover { border-color: rgba(255,248,240,0.12); }
 
 select.select:focus,
 select.profile-select:focus {
@@ -416,15 +420,15 @@ select.profile-select option { background: var(--bg); color: var(--text); }
 }
 
 .toggle-label span {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--text);
 }
 
 .toggle-label small {
   font-size: 11px;
   color: var(--text-muted);
-  opacity: 0.6;
+  opacity: 0.75;
   line-height: 1.4;
 }
 
