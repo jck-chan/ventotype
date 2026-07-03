@@ -50,6 +50,47 @@ const eyeHide        = $('eye-hide');
 const refreshModels  = $<HTMLButtonElement>('refreshModels');
 const modelDropdown  = $<HTMLUListElement>('model-dropdown');
 const refreshIcon    = $('refresh-icon');
+const tabButtons     = Array.from(document.querySelectorAll<HTMLButtonElement>('.tab-btn'));
+const tabPanels      = Array.from(document.querySelectorAll<HTMLElement>('.tab-panel'));
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+function activateTab(button: HTMLButtonElement): void {
+  const targetId = button.dataset['tabTarget'];
+  if (!targetId) return;
+
+  for (const panel of tabPanels) {
+    const isActive = panel.id === targetId;
+    panel.hidden = !isActive;
+    panel.classList.toggle('active', isActive);
+  }
+
+  for (const tab of tabButtons) {
+    const isActive = tab === button;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+    tab.tabIndex = isActive ? 0 : -1;
+  }
+}
+
+tabButtons.forEach((button, index) => {
+  button.addEventListener('click', () => activateTab(button));
+  button.addEventListener('keydown', (e) => {
+    const lastIndex = tabButtons.length - 1;
+    let nextIndex = index;
+
+    if (e.key === 'ArrowRight') nextIndex = index === lastIndex ? 0 : index + 1;
+    else if (e.key === 'ArrowLeft') nextIndex = index === 0 ? lastIndex : index - 1;
+    else if (e.key === 'Home') nextIndex = 0;
+    else if (e.key === 'End') nextIndex = lastIndex;
+    else return;
+
+    e.preventDefault();
+    const nextButton = tabButtons[nextIndex];
+    if (!nextButton) return;
+    activateTab(nextButton);
+    nextButton.focus();
+  });
+});
 
 // ── Profiles state ──────────────────────────────────────────────────────────
 // Profiles are held in memory; the form always reflects the active one. Edits

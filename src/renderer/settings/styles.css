@@ -69,6 +69,45 @@ html, body {
   letter-spacing: 0.01em;
 }
 
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.tab-list {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 0 24px 18px;
+}
+
+.tab-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: background 140ms, border-color 140ms, color 140ms;
+  -webkit-app-region: no-drag;
+}
+
+.tab-btn:hover {
+  background: var(--bg-input);
+  color: var(--text);
+}
+
+.tab-btn:focus-visible {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.tab-btn.active {
+  background: var(--accent-dim);
+  border-color: rgba(124,58,237,0.28);
+  color: var(--text);
+}
+
 /* ── Scrollable content ──────────────────────────────────────────────────── */
 .content {
   flex: 1;
@@ -83,6 +122,16 @@ html, body {
 
 .content::-webkit-scrollbar { width: 4px; }
 .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
 
 /* ── Section ─────────────────────────────────────────────────────────────── */
 .section {
@@ -284,6 +333,18 @@ input:focus {
 
 .btn-secondary:disabled { opacity: 0.4; cursor: default; }
 .btn-secondary:disabled:hover { background: var(--bg-input); border-color: var(--border); color: var(--text-muted); }
+
+.btn-secondary.icon-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.btn-secondary.icon-btn.danger:hover { color: var(--red); }
+.btn-secondary.icon-btn.danger:disabled:hover { color: var(--text-muted); }
 
 /* ── Profile bar ─────────────────────────────────────────────────────────── */
 .profile-bar {
