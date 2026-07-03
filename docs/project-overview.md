@@ -34,6 +34,8 @@ src/shared/
   ipc-channels.ts           — typed IPC channel names
 ```
 
+
+
 ## Key behaviours
 
 - **Single instance** — second launch focuses the settings window
@@ -43,16 +45,21 @@ src/shared/
 - **Cancel** — `cancelShortcut` discards the recording without transcribing
 - **Quit guard** — overlay has `closable: false`; must call `overlayWindow.destroy()` before `app.quit()`
 
+
+
 ## Dev
 
 ```bash
 npm run dev       # electron-vite dev server
-dist:mac          # macos build
-dist:win          # windows build
+npm run dist:mac  # macos build
+npm run dist:win  # windows build
 npm run preview   # run built app
 ```
+
+
 
 ## Resources
 
 - `resources/icon.png` — dock/app icon
 - `resources/icon-tray.png` — menu bar tray icon (~22×22 on macOS)
+
