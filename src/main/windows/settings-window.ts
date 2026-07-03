@@ -8,7 +8,7 @@ export class SettingsWindow {
 
   show(): void {
     if (this.win && !this.win.isDestroyed()) {
-      this.win.setAlwaysOnTop(true);
+      this.win.setAlwaysOnTop(false);
       this.win.show();
       this.win.focus();
       if (process.platform === 'darwin') app.dock?.show();
@@ -25,7 +25,7 @@ export class SettingsWindow {
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
       backgroundColor: '#0f0f11',
       autoHideMenuBar: true,
-      alwaysOnTop: true,
+      alwaysOnTop: false,
       skipTaskbar: false,
       webPreferences: {
         preload: SETTINGS_PRELOAD,
