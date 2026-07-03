@@ -48,16 +48,15 @@ function loadTrayIcon(): Electron.NativeImage {
 }
 
 /**
- * macOS menu bar (or Windows/Linux notification area) tray with Settings + Quit.
+ * macOS menu bar (or Windows/Linux notification area) tray.
  */
 export function createMenuBarTray(openSettings: () => void): Tray {
   const tray = new Tray(loadTrayIcon());
   tray.setToolTip('VentoType');
   const menu = Menu.buildFromTemplate([
-    { label: 'Settings…', click: () => openSettings() },
-    { type: 'separator' },
-    { label: 'Quit VentoType', click: () => app.quit() }
+    { label: 'Quit', click: () => app.quit() }
   ]);
-  tray.setContextMenu(menu);
+  tray.on('click', () => openSettings());
+  tray.on('right-click', () => tray.popUpContextMenu(menu));
   return tray;
 }
