@@ -53,7 +53,7 @@ export function registerIpcHandlers(
 
   // Open troubleshooting files in the OS default editor/viewer.
   ipcMain.handle(IPC.Shell.OpenLogFile, () => shell.openPath(log.logFile));
-  ipcMain.handle(IPC.Shell.OpenSettingsFile, () => shell.openPath(store.ensureFile()));
+  ipcMain.handle(IPC.Shell.OpenUserDataFolder, () => shell.openPath(store.dataDir));
 
   // Login item (open at login)
   ipcMain.handle(IPC.App.GetLoginItem, () =>

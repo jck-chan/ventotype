@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   saveActiveProfile: (profile: unknown, activeProfileId: unknown) =>
     ipcRenderer.invoke('settings:save-active-profile', profile, activeProfileId),
   openLogFile: () => ipcRenderer.invoke('shell:open-log-file'),
-  openSettingsFile: () => ipcRenderer.invoke('shell:open-settings-file'),
+  openUserDataFolder: () => ipcRenderer.invoke('shell:open-user-data-folder'),
   listModels: (baseURL: string, apiKey: string, type: string) =>
     ipcRenderer.invoke('api:list-models', baseURL, apiKey, type),
   getLoginItem: () => ipcRenderer.invoke('app:get-login-item'),

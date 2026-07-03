@@ -118,6 +118,10 @@ export function initAppSettings(onDirty: () => void): void {
     window.settingsAPI.openLogFile();
   });
 
+  $<HTMLButtonElement>('openUserDataFolder').addEventListener('click', () => {
+    window.settingsAPI.openUserDataFolder();
+  });
+
   for (const el of Object.values(fields)) {
     el.addEventListener('input', onDirty);
     el.addEventListener('change', onDirty);

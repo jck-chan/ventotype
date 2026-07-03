@@ -17,7 +17,7 @@ export const IPC = {
   },
   Shell: {
     OpenLogFile: 'shell:open-log-file',
-    OpenSettingsFile: 'shell:open-settings-file'
+    OpenUserDataFolder: 'shell:open-user-data-folder'
   },
   Api: {
     ListModels: 'api:list-models'

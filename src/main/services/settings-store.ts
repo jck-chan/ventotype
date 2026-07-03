@@ -1,20 +1,17 @@
 import { app } from 'electron';
 import { EventEmitter } from 'node:events';
+import { openSync, fsyncSync, closeSync } from 'node:fs';
 import {
-  closeSync,
-  existsSync,
-  fsyncSync,
-  mkdirSync,
-  openSync,
-  readFileSync,
-  renameSync,
-  unlinkSync,
-  writeFileSync
-} from 'node:fs';
-import { join, dirname } from 'node:path';
-import { ConnectionProfile, DEFAULT_PROFILE, defaultSettingsFor, EndpointType, Settings } from '@shared/types';
+  AppSettings,
+  ConnectionProfile,
+  defaultSettingsFor,
+  ProfilesData,
+  Settings
+} from '@shared/types';
+import { readJsonFile, writeJsonAtomic } from '../user-data/json-io';
+import { userDataPaths } from '../user-data/paths';
+import { runUserDataMigrations } from '../user-data/runner';
 
-// Platform-aware defaults, resolved once in the main process where `process` exists.
 const DEFAULTS: Settings = defaultSettingsFor(process.platform);
 
 type StoreEvents = {
@@ -22,12 +19,19 @@ type StoreEvents = {
 };
 
 export class SettingsStore extends EventEmitter {
-  private readonly filePath: string;
+  private readonly storeDir: string;
+  private readonly settingsPath: string;
+  private readonly profilesPath: string;
   private current: Settings;
 
   constructor() {
     super();
-    this.filePath = join(app.getPath('userData'), 'settings.json');
+    const electronUserDataDir = app.getPath('userData');
+    runUserDataMigrations(electronUserDataDir);
+    const paths = userDataPaths(electronUserDataDir);
+    this.storeDir = paths.storeDir;
+    this.settingsPath = paths.settings;
+    this.profilesPath = paths.profiles;
     this.current = this.load();
   }
 
@@ -35,9 +39,14 @@ export class SettingsStore extends EventEmitter {
     return { ...this.current };
   }
 
+  get dataDir(): string {
+    return this.storeDir;
+  }
+
   ensureFile(): string {
-    if (!existsSync(this.filePath)) this.save(this.current);
-    return this.filePath;
+    if (!readJsonFile(this.settingsPath)) this.saveAppSettings(this.current);
+    if (!readJsonFile(this.profilesPath)) this.saveProfiles(this.current);
+    return this.settingsPath;
   }
 
   update(patch: Partial<Settings>): Settings {
@@ -52,10 +61,10 @@ export class SettingsStore extends EventEmitter {
   updateActiveProfile(profile: ConnectionProfile, activeProfileId: string): Settings {
     const prev = this.current;
     const profiles = prev.profiles.some((p) => p.id === profile.id)
-      ? prev.profiles.map((p) => p.id === profile.id ? { ...profile } : p)
+      ? prev.profiles.map((p) => (p.id === profile.id ? { ...profile } : p))
       : [...prev.profiles, { ...profile }];
     const next: Settings = { ...prev, profiles, activeProfileId };
-    this.save(next);
+    this.saveProfiles(next);
     this.current = next;
     this.emit('change', next, prev);
     return { ...next };
@@ -66,65 +75,31 @@ export class SettingsStore extends EventEmitter {
   }
 
   private load(): Settings {
-    try {
-      if (!existsSync(this.filePath)) return { ...DEFAULTS };
-      const raw = readFileSync(this.filePath, 'utf8');
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      if (typeof parsed['toggleShortcut'] !== 'string' && typeof parsed['startShortcut'] === 'string') {
-        parsed['toggleShortcut'] = parsed['startShortcut'];
-      }
-      if (typeof parsed['cancelShortcut'] !== 'string' && typeof parsed['stopShortcut'] === 'string') {
-        parsed['cancelShortcut'] = parsed['stopShortcut'];
-      }
-      delete parsed['startShortcut'];
-      delete parsed['stopShortcut'];
-
-      // Migrate flat single-endpoint settings → a single connection profile.
-      if (!Array.isArray(parsed['profiles'])) {
-        const baseURL = typeof parsed['baseURL'] === 'string' ? parsed['baseURL'] : DEFAULT_PROFILE.baseURL;
-        const type: EndpointType = /(^|\.)openrouter\.ai/i.test(baseURL) ? 'openrouter' : 'openai';
-        parsed['profiles'] = [{
-          ...DEFAULT_PROFILE,
-          type,
-          baseURL,
-          apiKey:   typeof parsed['apiKey']   === 'string' ? parsed['apiKey']   : DEFAULT_PROFILE.apiKey,
-          model:    typeof parsed['model']    === 'string' ? parsed['model']    : DEFAULT_PROFILE.model,
-          language: typeof parsed['language'] === 'string' ? parsed['language'] : DEFAULT_PROFILE.language
-        }];
-        parsed['activeProfileId'] = DEFAULT_PROFILE.id;
-      }
-      delete parsed['baseURL'];
-      delete parsed['apiKey'];
-      delete parsed['model'];
-      delete parsed['language'];
-
-      return { ...DEFAULTS, ...parsed } as Settings;
-    } catch {
-      return { ...DEFAULTS };
-    }
+    const appSettings = readJsonFile<Partial<AppSettings>>(this.settingsPath) ?? {};
+    const profilesData = readJsonFile<Partial<ProfilesData>>(this.profilesPath) ?? {};
+    return { ...DEFAULTS, ...appSettings, ...profilesData };
   }
 
   private save(settings: Settings): void {
-    const dir = dirname(this.filePath);
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    this.saveAppSettings(settings);
+    this.saveProfiles(settings);
+  }
 
-    const tempPath = join(dir, `.settings.${process.pid}.${Date.now()}.tmp`);
-    let fd: number | undefined;
+  private saveAppSettings(settings: AppSettings): void {
+    writeJsonAtomic(this.settingsPath, {
+      toggleShortcut: settings.toggleShortcut,
+      cancelShortcut: settings.cancelShortcut,
+      warmUpOnRecord: settings.warmUpOnRecord
+    });
+    this.fsyncDirectoryBestEffort(this.storeDir);
+  }
 
-    try {
-      fd = openSync(tempPath, 'wx', 0o600);
-      writeFileSync(fd, JSON.stringify(settings, null, 2), 'utf8');
-      fsyncSync(fd);
-      closeSync(fd);
-      fd = undefined;
-
-      renameSync(tempPath, this.filePath);
-      this.fsyncDirectoryBestEffort(dir);
-    } catch (err) {
-      if (fd !== undefined) closeSync(fd);
-      if (existsSync(tempPath)) unlinkSync(tempPath);
-      throw err;
-    }
+  private saveProfiles(settings: ProfilesData): void {
+    writeJsonAtomic(this.profilesPath, {
+      profiles: settings.profiles,
+      activeProfileId: settings.activeProfileId
+    });
+    this.fsyncDirectoryBestEffort(this.storeDir);
   }
 
   private fsyncDirectoryBestEffort(dir: string): void {

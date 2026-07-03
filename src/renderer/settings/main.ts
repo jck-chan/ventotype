@@ -22,8 +22,8 @@ declare global {
       set: (patch: Partial<Settings>) => Promise<Settings>;
       saveActiveProfile: (profile: unknown, activeProfileId: unknown) => Promise<Settings>;
       openLogFile: () => Promise<void>;
-      openSettingsFile: () => Promise<void>;
-      listModels: (baseURL: string, apiKey: string, type: EndpointType) => Promise<string[]>;
+      openUserDataFolder: () => Promise<void>;
+      listModels: (baseURL: string, apiKey: string, type: string) => Promise<string[]>;
       getLoginItem: () => Promise<boolean>;
       setLoginItem: (enable: boolean) => Promise<void>;
     };
