@@ -1,6 +1,16 @@
 import { app } from 'electron';
 import { EventEmitter } from 'node:events';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  fsyncSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync
+} from 'node:fs';
 import { join, dirname } from 'node:path';
 import { ConnectionProfile, DEFAULT_PROFILE, defaultSettingsFor, EndpointType, Settings } from '@shared/types';
 
@@ -33,8 +43,8 @@ export class SettingsStore extends EventEmitter {
   update(patch: Partial<Settings>): Settings {
     const prev = this.current;
     const next: Settings = { ...prev, ...patch };
-    this.current = next;
     this.save(next);
+    this.current = next;
     this.emit('change', next, prev);
     return { ...next };
   }
@@ -45,8 +55,8 @@ export class SettingsStore extends EventEmitter {
       ? prev.profiles.map((p) => p.id === profile.id ? { ...profile } : p)
       : [...prev.profiles, { ...profile }];
     const next: Settings = { ...prev, profiles, activeProfileId };
-    this.current = next;
     this.save(next);
+    this.current = next;
     this.emit('change', next, prev);
     return { ...next };
   }
@@ -97,6 +107,36 @@ export class SettingsStore extends EventEmitter {
   private save(settings: Settings): void {
     const dir = dirname(this.filePath);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    writeFileSync(this.filePath, JSON.stringify(settings, null, 2), 'utf8');
+
+    const tempPath = join(dir, `.settings.${process.pid}.${Date.now()}.tmp`);
+    let fd: number | undefined;
+
+    try {
+      fd = openSync(tempPath, 'wx', 0o600);
+      writeFileSync(fd, JSON.stringify(settings, null, 2), 'utf8');
+      fsyncSync(fd);
+      closeSync(fd);
+      fd = undefined;
+
+      renameSync(tempPath, this.filePath);
+      this.fsyncDirectoryBestEffort(dir);
+    } catch (err) {
+      if (fd !== undefined) closeSync(fd);
+      if (existsSync(tempPath)) unlinkSync(tempPath);
+      throw err;
+    }
+  }
+
+  private fsyncDirectoryBestEffort(dir: string): void {
+    let fd: number | undefined;
+
+    try {
+      fd = openSync(dir, 'r');
+      fsyncSync(fd);
+    } catch {
+      // Some platforms/filesystems do not allow directory fsync.
+    } finally {
+      if (fd !== undefined) closeSync(fd);
+    }
   }
 }
