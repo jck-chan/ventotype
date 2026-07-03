@@ -1,17 +1,26 @@
+import { Settings } from '@shared/types';
 import {
-  ConnectionProfile,
-  DEFAULT_PROFILE,
-  EndpointType,
-  ENDPOINT_DEFAULTS,
-  Settings
-} from '@shared/types';
+  appSettingsPatch,
+  initAppSettings,
+  loadAppSettings,
+  openAtLoginValue
+} from './app-settings';
+import {
+  bumpProfileDirtyVersion,
+  flushProfileSave,
+  initProfiles,
+  loadProfiles,
+  markProfileClean,
+  profilesPatch
+} from './profiles';
+import { initTabs } from './tabs';
 
 declare global {
   interface Window {
     settingsAPI: {
       get: () => Promise<Settings>;
       set: (patch: Partial<Settings>) => Promise<Settings>;
-      saveActiveProfile: (profile: ConnectionProfile, activeProfileId: string) => Promise<Settings>;
+      saveActiveProfile: (profile: unknown, activeProfileId: unknown) => Promise<Settings>;
       openLogFile: () => Promise<void>;
       openSettingsFile: () => Promise<void>;
       listModels: (baseURL: string, apiKey: string, type: EndpointType) => Promise<string[]>;
@@ -21,307 +30,34 @@ declare global {
   }
 }
 
-// ── Elements ──────────────────────────────────────────────────────────────────
-const $ = <T extends HTMLElement>(id: string): T =>
-  document.getElementById(id) as T;
+const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
+const statusEl = document.getElementById('status') as HTMLSpanElement;
 
-const fields = {
-  profileName:   $<HTMLInputElement>('profileName'),
-  endpointType:  $<HTMLSelectElement>('endpointType'),
-  baseURL:       $<HTMLInputElement>('baseURL'),
-  apiKey:        $<HTMLInputElement>('apiKey'),
-  model:         $<HTMLInputElement>('model'),
-  language:      $<HTMLInputElement>('language'),
-  toggleShortcut: $<HTMLInputElement>('toggleShortcut'),
-  cancelShortcut: $<HTMLInputElement>('cancelShortcut'),
-  warmUpOnRecord: $<HTMLInputElement>('warmUpOnRecord'),
-  openAtLogin:   $<HTMLInputElement>('openAtLogin')
-};
-
-const profileSelect  = $<HTMLSelectElement>('profileSelect');
-const addProfileBtn  = $<HTMLButtonElement>('addProfile');
-const delProfileBtn  = $<HTMLButtonElement>('deleteProfile');
-
-const saveBtn        = $<HTMLButtonElement>('saveBtn');
-const statusEl       = $<HTMLSpanElement>('status');
-const revealBtn      = $<HTMLButtonElement>('revealKey');
-const eyeShow        = $('eye-show');
-const eyeHide        = $('eye-hide');
-const refreshModels  = $<HTMLButtonElement>('refreshModels');
-const modelDropdown  = $<HTMLUListElement>('model-dropdown');
-const refreshIcon    = $('refresh-icon');
-const tabButtons     = Array.from(document.querySelectorAll<HTMLButtonElement>('.tab-btn'));
-const tabPanels      = Array.from(document.querySelectorAll<HTMLElement>('.tab-panel'));
-
-// ── Tabs ─────────────────────────────────────────────────────────────────────
-function activateTab(button: HTMLButtonElement): void {
-  const targetId = button.dataset['tabTarget'];
-  if (!targetId) return;
-
-  for (const panel of tabPanels) {
-    const isActive = panel.id === targetId;
-    panel.hidden = !isActive;
-    panel.classList.toggle('active', isActive);
-  }
-
-  for (const tab of tabButtons) {
-    const isActive = tab === button;
-    tab.classList.toggle('active', isActive);
-    tab.setAttribute('aria-selected', String(isActive));
-    tab.tabIndex = isActive ? 0 : -1;
-  }
-}
-
-tabButtons.forEach((button, index) => {
-  button.addEventListener('click', () => activateTab(button));
-  button.addEventListener('keydown', (e) => {
-    const lastIndex = tabButtons.length - 1;
-    let nextIndex = index;
-
-    if (e.key === 'ArrowRight') nextIndex = index === lastIndex ? 0 : index + 1;
-    else if (e.key === 'ArrowLeft') nextIndex = index === 0 ? lastIndex : index - 1;
-    else if (e.key === 'Home') nextIndex = 0;
-    else if (e.key === 'End') nextIndex = lastIndex;
-    else return;
-
-    e.preventDefault();
-    const nextButton = tabButtons[nextIndex];
-    if (!nextButton) return;
-    activateTab(nextButton);
-    nextButton.focus();
-  });
-});
-
-// ── Profiles state ──────────────────────────────────────────────────────────
-// Profiles are held in memory; the form always reflects the active one. Edits
-// are flushed into the active profile object before switching/adding/saving.
-let profiles: ConnectionProfile[] = [];
-let activeId = '';
-
-const genId = (): string =>
-  `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
-
-function getActive(): ConnectionProfile {
-  return profiles.find((p) => p.id === activeId) ?? profiles[0];
-}
-
-/** Flush the endpoint form fields back into the active profile object. */
-function syncFormToActive(): void {
-  const p = getActive();
-  if (!p) return;
-  p.name     = fields.profileName.value.trim() || 'Untitled';
-  p.type     = fields.endpointType.value as EndpointType;
-  p.baseURL  = fields.baseURL.value.trim();
-  p.apiKey   = fields.apiKey.value.trim();
-  p.model    = fields.model.value.trim() || DEFAULT_PROFILE.model;
-  p.language = fields.language.value.trim();
-}
-
-/** Populate the endpoint form fields from the active profile. */
-function loadActiveToForm(): void {
-  const p = getActive();
-  if (!p) return;
-  fields.profileName.value  = p.name;
-  fields.endpointType.value = p.type;
-  fields.baseURL.value      = p.baseURL;
-  fields.apiKey.value       = p.apiKey;
-  fields.model.value        = p.model;
-  fields.language.value     = p.language;
-  allModels = []; // model list depends on the profile's endpoint/key
-  hideDropdown();
-}
-
-function renderProfileSelect(): void {
-  profileSelect.innerHTML = '';
-  for (const p of profiles) {
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = p.name;
-    profileSelect.appendChild(opt);
-  }
-  profileSelect.value = activeId;
-  delProfileBtn.disabled = profiles.length <= 1;
-}
-
-// ── Load ──────────────────────────────────────────────────────────────────────
-async function load(): Promise<void> {
-  try {
-    const [s, openAtLogin] = await Promise.all([
-      window.settingsAPI.get(),
-      window.settingsAPI.getLoginItem()
-    ]);
-    profiles = (s.profiles ?? []).map((p) => ({ ...p }));
-    if (profiles.length === 0) profiles = [{ ...DEFAULT_PROFILE, id: genId() }];
-    activeId = profiles.some((p) => p.id === s.activeProfileId)
-      ? s.activeProfileId
-      : profiles[0].id;
-
-    renderProfileSelect();
-    loadActiveToForm();
-
-    fields.toggleShortcut.value = s.toggleShortcut ?? '';
-    fields.cancelShortcut.value = s.cancelShortcut ?? '';
-    fields.warmUpOnRecord.checked = s.warmUpOnRecord ?? true;
-    fields.openAtLogin.checked    = openAtLogin;
-    markClean();
-  } catch (err) {
-    showStatus('Failed to load settings.', 'err');
-    console.error(err);
-  }
-}
-
-// ── Save ──────────────────────────────────────────────────────────────────────
-async function save(): Promise<void> {
-  syncFormToActive();
-  saveBtn.disabled = true;
-  try {
-    await profileSavePromise;
-    await Promise.all([
-      window.settingsAPI.set({
-        profiles,
-        activeProfileId: activeId,
-        toggleShortcut: fields.toggleShortcut.value.trim(),
-        cancelShortcut: fields.cancelShortcut.value.trim(),
-        warmUpOnRecord: fields.warmUpOnRecord.checked
-      }),
-      window.settingsAPI.setLoginItem(fields.openAtLogin.checked)
-    ]);
-    markClean();
-    showStatus('Settings saved.', 'ok');
-  } catch (err) {
-    showStatus((err as Error).message ?? 'Failed to save.', 'err');
-    console.error(err);
-  } finally {
-    saveBtn.disabled = false;
-  }
-}
-
-let profileSavePromise: Promise<void> = Promise.resolve();
-
-function saveActiveProfileOnly(profile: ConnectionProfile, activeProfileId: string): void {
-  const savedDirtyVersion = profileDirtyVersion;
-  profileSelect.disabled = true;
-
-  const run = async (): Promise<void> => {
-    try {
-      await window.settingsAPI.saveActiveProfile(profile, activeProfileId);
-      if (profileDirtyVersion === savedDirtyVersion) {
-        profileDirty = false;
-        refreshDirtyState();
-      }
-    } catch (err) {
-      profileDirty = true;
-      refreshDirtyState();
-      showStatus((err as Error).message ?? 'Failed to save profile.', 'err');
-      console.error(err);
-    } finally {
-      profileSelect.disabled = false;
-    }
-  };
-
-  profileSavePromise = profileSavePromise.then(run, run);
-}
-
-// ── Profile actions ───────────────────────────────────────────────────────────
-profileSelect.addEventListener('change', () => {
-  syncFormToActive();
-  const profileToSave = { ...getActive() };
-  activeId = profileSelect.value;
-  renderProfileSelect();
-  loadActiveToForm();
-  saveActiveProfileOnly(profileToSave, activeId);
-});
-
-addProfileBtn.addEventListener('click', () => {
-  syncFormToActive();
-  const profile: ConnectionProfile = {
-    ...DEFAULT_PROFILE,
-    id: genId(),
-    name: `Profile ${profiles.length + 1}`
-  };
-  profiles.push(profile);
-  activeId = profile.id;
-  renderProfileSelect();
-  loadActiveToForm();
-  fields.profileName.focus();
-  fields.profileName.select();
-  markProfileDirty();
-});
-
-delProfileBtn.addEventListener('click', () => {
-  if (profiles.length <= 1) return;
-  const name = getActive()?.name ?? 'this profile';
-  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
-  profiles = profiles.filter((p) => p.id !== activeId);
-  activeId = profiles[0].id;
-  renderProfileSelect();
-  loadActiveToForm();
-  markProfileDirty();
-});
-
-// Keep the dropdown label live as the name is typed.
-fields.profileName.addEventListener('input', () => {
-  const opt = profileSelect.querySelector<HTMLOptionElement>(`option[value="${activeId}"]`);
-  if (opt) opt.textContent = fields.profileName.value.trim() || 'Untitled';
-});
-
-// Switching endpoint type swaps in that provider's defaults when the current
-// URL/model are empty or still a known default (i.e. untouched by the user).
-fields.endpointType.addEventListener('change', () => {
-  const type = fields.endpointType.value as EndpointType;
-  const knownURLs   = Object.values(ENDPOINT_DEFAULTS).map((d) => d.baseURL);
-  const knownModels = Object.values(ENDPOINT_DEFAULTS).map((d) => d.model);
-  if (!fields.baseURL.value.trim() || knownURLs.includes(fields.baseURL.value.trim())) {
-    fields.baseURL.value = ENDPOINT_DEFAULTS[type].baseURL;
-  }
-  if (!fields.model.value.trim() || knownModels.includes(fields.model.value.trim())) {
-    fields.model.value = ENDPOINT_DEFAULTS[type].model;
-  }
-});
-
-// ── Dirty tracking ────────────────────────────────────────────────────────────
 let profileDirty = false;
-let globalDirty = false;
-let profileDirtyVersion = 0;
-
-const PROFILE_FIELD_IDS = new Set<keyof typeof fields>([
-  'profileName',
-  'endpointType',
-  'baseURL',
-  'apiKey',
-  'model',
-  'language'
-]);
+let appSettingsDirty = false;
 
 function refreshDirtyState(): void {
-  const isDirty = profileDirty || globalDirty;
+  const isDirty = profileDirty || appSettingsDirty;
   document.title = isDirty ? 'VentoType *' : 'VentoType';
-  saveBtn.textContent = isDirty ? 'Save settings *' : 'Save settings';
+  saveBtn.textContent = isDirty ? 'Save changes *' : 'Save changes';
 }
 
 function markProfileDirty(): void {
   profileDirty = true;
-  profileDirtyVersion += 1;
   refreshDirtyState();
 }
 
-function markGlobalDirty(): void {
-  globalDirty = true;
+function markAppSettingsDirty(): void {
+  appSettingsDirty = true;
   refreshDirtyState();
-}
-
-function markFieldDirty(fieldId: keyof typeof fields): void {
-  if (PROFILE_FIELD_IDS.has(fieldId)) markProfileDirty();
-  else markGlobalDirty();
 }
 
 function markClean(): void {
   profileDirty = false;
-  globalDirty = false;
+  appSettingsDirty = false;
   refreshDirtyState();
 }
 
-// ── Status flash ──────────────────────────────────────────────────────────────
 let statusTimer: ReturnType<typeof setTimeout> | null = null;
 
 function showStatus(msg: string, type: 'ok' | 'err'): void {
@@ -334,220 +70,59 @@ function showStatus(msg: string, type: 'ok' | 'err'): void {
   }, 3000);
 }
 
-// ── Reveal password toggle ────────────────────────────────────────────────────
-revealBtn.addEventListener('click', () => {
-  const isHidden = fields.apiKey.type === 'password';
-  fields.apiKey.type = isHidden ? 'text' : 'password';
-  eyeShow.classList.toggle('hidden', isHidden);
-  eyeHide.classList.toggle('hidden', !isHidden);
-});
-
-// ── Shortcut capture ──────────────────────────────────────────────────────────
-const MODIFIER_KEYS = new Set(['Control', 'Meta', 'Shift', 'Alt']);
-let capturingField: HTMLInputElement | null = null;
-
-function formatAccelerator(e: KeyboardEvent): string {
-  const parts: string[] = [];
-  if (e.ctrlKey)  parts.push('Control');
-  if (e.metaKey)  parts.push('Command');
-  if (e.shiftKey) parts.push('Shift');
-  if (e.altKey)   parts.push('Alt');
-
-  const key = e.key;
-  if (!MODIFIER_KEYS.has(key)) {
-    // Electron accelerator format
-    const mapped = KEY_MAP[key] ?? capitalize(key);
-    parts.push(mapped);
-  }
-
-  return parts.join('+');
-}
-
-const KEY_MAP: Record<string, string> = {
-  ' ':           'Space',
-  'ArrowLeft':   'Left',
-  'ArrowRight':  'Right',
-  'ArrowUp':     'Up',
-  'ArrowDown':   'Down',
-  '.':           '.',
-  ',':           ',',
-  '/':           '/',
-  ';':           ';',
-  "'":           "'",
-  '[':           '[',
-  ']':           ']',
-  '\\':          '\\',
-  '-':           '-',
-  '=':           '='
-};
-
-function capitalize(s: string): string {
-  if (s.length === 1) return s.toUpperCase();
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function startCapture(input: HTMLInputElement): void {
-  if (capturingField) stopCapture(capturingField);
-  capturingField = input;
-  input.classList.add('capturing');
-  input.placeholder = 'Press shortcut…';
-}
-
-function stopCapture(input: HTMLInputElement): void {
-  input.classList.remove('capturing');
-  input.placeholder = 'Click to record…';
-  if (capturingField === input) capturingField = null;
-}
-
-for (const inputId of ['toggleShortcut', 'cancelShortcut'] as const) {
-  const input = fields[inputId];
-
-  input.addEventListener('click', () => {
-    if (capturingField === input) stopCapture(input);
-    else startCapture(input);
-  });
-
-  input.addEventListener('blur', () => stopCapture(input));
-}
-
-document.addEventListener('keydown', (e) => {
-  if (!capturingField) return;
-  e.preventDefault();
-  e.stopPropagation();
-
-  if (e.key === 'Escape') {
-    stopCapture(capturingField);
-    return;
-  }
-
-  // Only commit when a non-modifier key is pressed
-  if (!MODIFIER_KEYS.has(e.key)) {
-    const accel = formatAccelerator(e);
-    if (accel) {
-      capturingField.value = accel;
-      stopCapture(capturingField);
-      markGlobalDirty();
-    }
-  }
-});
-
-// ── Clear buttons ─────────────────────────────────────────────────────────────
-document.querySelectorAll<HTMLButtonElement>('.clear-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const targetId = btn.dataset['target'] as keyof typeof fields;
-    if (targetId && fields[targetId]) {
-      fields[targetId].value = '';
-      markFieldDirty(targetId);
-    }
-  });
-});
-
-// ── Model dropdown ────────────────────────────────────────────────────────────
-let allModels: string[] = [];
-let activeIdx = -1;
-
-function renderDropdown(filter: string): void {
-  const f = filter.toLowerCase();
-  const matches = allModels.filter(m => m.toLowerCase().includes(f));
-
-  modelDropdown.innerHTML = '';
-  activeIdx = -1;
-
-  if (matches.length === 0) { hideDropdown(); return; }
-
-  for (const id of matches) {
-    const li = document.createElement('li');
-    li.className = 'model-option';
-    li.textContent = id;
-    li.addEventListener('mousedown', (e) => {
-      e.preventDefault(); // keep focus on input
-      fields.model.value = id;
-      hideDropdown();
-      markProfileDirty();
-    });
-    modelDropdown.appendChild(li);
-  }
-
-  modelDropdown.classList.add('open');
-}
-
-function hideDropdown(): void {
-  modelDropdown.classList.remove('open');
-  activeIdx = -1;
-}
-
-function moveActive(delta: number): void {
-  const items = modelDropdown.querySelectorAll<HTMLLIElement>('.model-option');
-  if (!items.length) return;
-  activeIdx = Math.max(0, Math.min(activeIdx + delta, items.length - 1));
-  items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
-  items[activeIdx]?.scrollIntoView({ block: 'nearest' });
-}
-
-fields.model.addEventListener('focus', () => {
-  if (allModels.length > 0) renderDropdown(fields.model.value);
-  else fetchModels();
-});
-
-fields.model.addEventListener('blur', () => setTimeout(hideDropdown, 120));
-
-fields.model.addEventListener('input', () => {
-  if (allModels.length > 0) renderDropdown(fields.model.value);
-});
-
-fields.model.addEventListener('keydown', (e) => {
-  if (!modelDropdown.classList.contains('open')) return;
-  if (e.key === 'ArrowDown')  { e.preventDefault(); moveActive(+1); }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-1); }
-  else if (e.key === 'Enter' && activeIdx >= 0) {
-    e.preventDefault();
-    const item = modelDropdown.querySelectorAll<HTMLLIElement>('.model-option')[activeIdx];
-    if (item) { fields.model.value = item.textContent ?? ''; hideDropdown(); }
-  } else if (e.key === 'Escape') hideDropdown();
-});
-
-async function fetchModels(): Promise<void> {
-  const baseURL = fields.baseURL.value.trim();
-  const apiKey  = fields.apiKey.value.trim();
-  if (!baseURL) return;
-
-  refreshIcon.classList.add('spinning');
-  refreshModels.disabled = true;
-
+async function load(): Promise<void> {
   try {
-    allModels = await window.settingsAPI.listModels(baseURL, apiKey, fields.endpointType.value as EndpointType);
-    renderDropdown(fields.model.value);
-  } catch {
-    // silently ignore — user can still type manually
-  } finally {
-    refreshIcon.classList.remove('spinning');
-    refreshModels.disabled = false;
+    const [s, openAtLogin] = await Promise.all([
+      window.settingsAPI.get(),
+      window.settingsAPI.getLoginItem()
+    ]);
+    loadProfiles(s);
+    loadAppSettings(s, openAtLogin);
+    markClean();
+  } catch (err) {
+    showStatus('Failed to load settings.', 'err');
+    console.error(err);
   }
 }
 
-refreshModels.addEventListener('click', () => {
-  allModels = [];
-  fetchModels();
-});
+async function save(): Promise<void> {
+  saveBtn.disabled = true;
+  try {
+    await flushProfileSave();
+    await Promise.all([
+      window.settingsAPI.set({
+        ...profilesPatch(),
+        ...appSettingsPatch()
+      }),
+      window.settingsAPI.setLoginItem(openAtLoginValue())
+    ]);
+    markClean();
+    showStatus('Saved.', 'ok');
+  } catch (err) {
+    showStatus((err as Error).message ?? 'Failed to save.', 'err');
+    console.error(err);
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
 
-// ── Open troubleshooting files ────────────────────────────────────────────────
-$<HTMLButtonElement>('openLogFile').addEventListener('click', () => {
-  window.settingsAPI.openLogFile();
-});
+initTabs();
+initAppSettings(markAppSettingsDirty);
+initProfiles(
+  markProfileDirty,
+  () => {
+    profileDirty = false;
+    markProfileClean();
+    refreshDirtyState();
+  },
+  (message) => {
+    profileDirty = true;
+    bumpProfileDirtyVersion();
+    refreshDirtyState();
+    showStatus(message, 'err');
+  }
+);
 
-$<HTMLButtonElement>('openSettingsFile').addEventListener('click', () => {
-  window.settingsAPI.openSettingsFile();
-});
-
-// ── Field change listeners (covers direct typing + checkbox toggles) ───────────
-document.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select').forEach((el) => {
-  if (el === profileSelect) return;
-  const markDirtyForField = (): void => markFieldDirty(el.id as keyof typeof fields);
-  el.addEventListener('input', markDirtyForField);
-  el.addEventListener('change', markDirtyForField);
-});
-
-// ── Save button ───────────────────────────────────────────────────────────────
 saveBtn.addEventListener('click', save);
 
 document.addEventListener('keydown', (e) => {
@@ -557,5 +132,4 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ── Init ──────────────────────────────────────────────────────────────────────
 load();

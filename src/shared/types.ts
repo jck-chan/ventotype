@@ -12,13 +12,19 @@ export interface ConnectionProfile {
   language: string;
 }
 
-export interface Settings {
-  profiles: ConnectionProfile[];
-  activeProfileId: string;
+export interface AppSettings {
   toggleShortcut: string;
   cancelShortcut: string;
   warmUpOnRecord: boolean;
 }
+
+export interface ProfilesData {
+  profiles: ConnectionProfile[];
+  activeProfileId: string;
+}
+
+/** In-memory / IPC view combining app settings and connection profiles. */
+export interface Settings extends AppSettings, ProfilesData {}
 
 export const DEFAULT_PROFILE: ConnectionProfile = {
   id: 'default',
