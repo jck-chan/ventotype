@@ -51,6 +51,41 @@
           role="tabpanel"
           aria-labelledby="tab-settings"
         >
+          <!-- ── Shortcuts section ── -->
+          <section class="section">
+            <h2 class="section-title">Shortcuts</h2>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="toggleShortcut">Toggle shortcut</label>
+                <div class="shortcut-input-wrap">
+                  <input
+                    id="toggleShortcut"
+                    type="text"
+                    placeholder="Click to record…"
+                    readonly
+                    class="shortcut-input"
+                  />
+                  <button class="clear-btn" data-target="toggleShortcut" title="Clear">×</button>
+                </div>
+              </div>
+              <div class="field">
+                <label for="cancelShortcut">Cancel shortcut</label>
+                <div class="shortcut-input-wrap">
+                  <input
+                    id="cancelShortcut"
+                    type="text"
+                    placeholder="Click to record…"
+                    readonly
+                    class="shortcut-input"
+                  />
+                  <button class="clear-btn" data-target="cancelShortcut" title="Clear">×</button>
+                </div>
+              </div>
+            </div>
+            <p class="hint">Click a field, then press your desired key combination.</p>
+          </section>
+
           <!-- ── Behaviour section ── -->
           <section class="section">
             <h2 class="section-title">Behaviour</h2>
@@ -92,41 +127,6 @@
               </div>
               <button class="btn-secondary" id="openSettingsFile">Open file</button>
             </div>
-          </section>
-
-          <!-- ── Shortcuts section ── -->
-          <section class="section">
-            <h2 class="section-title">Shortcuts</h2>
-
-            <div class="field-row">
-              <div class="field">
-                <label for="toggleShortcut">Toggle shortcut</label>
-                <div class="shortcut-input-wrap">
-                  <input
-                    id="toggleShortcut"
-                    type="text"
-                    placeholder="Click to record…"
-                    readonly
-                    class="shortcut-input"
-                  />
-                  <button class="clear-btn" data-target="toggleShortcut" title="Clear">×</button>
-                </div>
-              </div>
-              <div class="field">
-                <label for="cancelShortcut">Cancel shortcut</label>
-                <div class="shortcut-input-wrap">
-                  <input
-                    id="cancelShortcut"
-                    type="text"
-                    placeholder="Click to record…"
-                    readonly
-                    class="shortcut-input"
-                  />
-                  <button class="clear-btn" data-target="cancelShortcut" title="Clear">×</button>
-                </div>
-              </div>
-            </div>
-            <p class="hint">Click a field, then press your desired key combination.</p>
           </section>
         </div>
 
