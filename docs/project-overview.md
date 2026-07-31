@@ -20,7 +20,7 @@ src/main/
   services/
     dictation-controller.ts — state machine: idle → recording → transcribing → typing → idle
     shortcuts.ts            — global shortcut registration/unregistration
-    transcriber.ts          — calls Whisper API with audio blob
+    transcriber.ts          — sends the audio to the active profile's endpoint
     typer.ts                — types transcribed text into focused app
     settings-store.ts       — persists settings (electron-store)
     menu-bar-tray.ts        — tray icon + context menu (Settings / Quit)
@@ -35,6 +35,29 @@ src/shared/
 ```
 
 
+
+## Connection types
+
+A profile's `type` decides how the audio is sent. All three are configured the same way
+(base URL, API key, model, language) — only the request shape differs.
+
+| Type | Endpoint | Request | Notes |
+| --- | --- | --- | --- |
+| `openai` | `/audio/transcriptions` | multipart form-data | OpenAI, Groq, local Whisper servers |
+| `openrouter` | `/audio/transcriptions` | JSON, base64 `input_audio` | OpenRouter rejects multipart |
+| `openai-chat` | `/chat/completions` | JSON, base64 `input_audio` content part | Multimodal chat models |
+
+`openai-chat` exists for models that transcribe well but ship no transcription route —
+Gemini being the motivating case. The audio goes in as one content part of a normal user
+turn, next to a text part telling the model to transcribe; the transcript comes back as
+`choices[0].message.content`. That instruction is the profile's **Prompt** field
+(`DEFAULT_TRANSCRIPTION_PROMPT` when empty), and since chat has no `language` parameter,
+the profile's language is appended to the prompt instead.
+
+Chat Completions only accepts `wav`/`mp3` in `input_audio` (both OpenAI and Gemini), so
+for these profiles the overlay renderer re-encodes its WebM/Opus take as 16 kHz mono WAV
+via Web Audio before handing it to main — see `requiresWavAudio()` and the `RecordOptions`
+passed with `dictation:start`. The Whisper-style types keep shipping WebM untouched.
 
 ## Key behaviours
 

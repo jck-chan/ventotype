@@ -1,4 +1,12 @@
-import { activeProfile, ConnectionProfile, Settings } from '@shared/types';
+import {
+  activeProfile,
+  ConnectionProfile,
+  DEFAULT_TRANSCRIPTION_PROMPT,
+  ENDPOINT_DEFAULTS,
+  EndpointType,
+  requiresWavAudio,
+  Settings
+} from '@shared/types';
 import { log } from './logger';
 
 export interface TranscribeInput {
@@ -6,39 +14,54 @@ export interface TranscribeInput {
   mimeType: string;
 }
 
+/** Log tag and user-facing name per endpoint type — chat calls aren't Whisper calls. */
+const API_LABEL: Record<EndpointType, { tag: string; name: string }> = {
+  openai:        { tag: 'whisper', name: 'Whisper API' },
+  openrouter:    { tag: 'whisper', name: 'Whisper API' },
+  'openai-chat': { tag: 'chat',    name: 'Chat API' }
+};
+
 export class Transcriber {
   constructor(private readonly getSettings: () => Settings) {}
+
+  /** Whether the active profile needs the recorder to hand over WAV instead of WebM. */
+  needsWavAudio(): boolean {
+    return requiresWavAudio(activeProfile(this.getSettings()).type);
+  }
 
   /** Fire-and-forget ping that triggers lazy model loading on the server. */
   warmUp(): void {
     const s = this.getSettings();
     const profile = activeProfile(s);
     if (!s.warmUpOnRecord || !profile.baseURL) return;
+    const { tag } = API_LABEL[profile.type];
     this.post(profile, createSilentWav(), 'audio/wav')
       .then(({ response, elapsed }) => {
-        log.info(`[whisper] ← ${response.status} ${response.statusText}  (${elapsed}ms)  0 chars`);
+        log.info(`[${tag}] ← ${response.status} ${response.statusText}  (${elapsed}ms)  0 chars`);
       })
       .catch((err: unknown) => {
-        log.warn('[whisper] warm-up network error', err);
+        log.warn(`[${tag}] warm-up network error`, err);
       });
   }
 
   async transcribe(input: TranscribeInput): Promise<string> {
     const profile = activeProfile(this.getSettings());
     if (!profile.baseURL) throw new Error('Missing base URL. Set it in Settings.');
+    const { tag, name } = API_LABEL[profile.type];
 
     const { response, elapsed } = await this.post(profile, input.audio, input.mimeType);
 
     if (!response.ok) {
       const body = await safeText(response);
-      log.error(`[whisper] ← ${response.status} ${response.statusText}  (${elapsed}ms)  body: ${body}`);
-      throw new Error(`Whisper API ${response.status}: ${body || response.statusText}`);
+      log.error(`[${tag}] ← ${response.status} ${response.statusText}  (${elapsed}ms)  body: ${body}`);
+      throw new Error(`${name} ${response.status}: ${body || response.statusText}`);
     }
 
-    const payload = (await response.json()) as { text?: string };
-    const text = (payload.text ?? '').trim();
+    const payload = (await response.json()) as TranscriptionPayload;
+    const text =
+      profile.type === 'openai-chat' ? chatText(payload) : (payload.text ?? '').trim();
 
-    log.info(`[whisper] ← ${response.status} OK  (${elapsed}ms)  ${text.length} chars`);
+    log.info(`[${tag}] ← ${response.status} OK  (${elapsed}ms)  ${text.length} chars`);
     return text;
   }
 
@@ -48,26 +71,46 @@ export class Transcriber {
     audioData: Uint8Array | ArrayBuffer,
     mimeType: string
   ): Promise<{ response: Response; elapsed: number }> {
-    const endpoint = `${profile.baseURL.replace(/\/$/, '')}/audio/transcriptions`;
-    const model    = profile.model || 'whisper-1';
+    const base     = profile.baseURL.replace(/\/$/, '');
+    const model    = profile.model || ENDPOINT_DEFAULTS[profile.type].model;
     const language = profile.language || undefined;
     const ext      = mimeToExtension(mimeType);
     const sizeKB   = (audioData.byteLength / 1024).toFixed(1);
+    const chat     = profile.type === 'openai-chat';
     const json     = profile.type === 'openrouter';
+    const endpoint = chat ? `${base}/chat/completions` : `${base}/audio/transcriptions`;
 
     log.info(
-      `[whisper] → ${endpoint}` +
+      `[${API_LABEL[profile.type].tag}] → ${endpoint}` +
       `  model: ${model}  |  lang: ${language || 'auto'}  |  fmt: ${ext}  |  size: ${sizeKB} KB` +
-      `  |  mode: ${json ? 'json' : 'multipart'}`
+      `  |  mode: ${chat ? 'chat' : json ? 'json' : 'multipart'}`
     );
 
     const headers: Record<string, string> = {};
     if (profile.apiKey) headers['Authorization'] = `Bearer ${profile.apiKey}`;
 
-    // OpenRouter rejects multipart uploads; it expects base64 audio in a JSON body.
-    // Other OpenAI-compatible servers (OpenAI, Groq, local) use multipart form-data.
     let body: BodyInit;
-    if (json) {
+    if (chat) {
+      // Multimodal chat models (Gemini, GPT-4o-audio) have no /audio/transcriptions
+      // route at all — the audio rides along as a content part of a normal chat turn
+      // and the transcript comes back as the assistant message. The instruction and
+      // the audio go in the same user message; a system role isn't universally
+      // supported across OpenAI-compatible chat servers.
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: transcriptionPrompt(profile) },
+              { type: 'input_audio', input_audio: { data: toBase64(audioData), format: ext } }
+            ]
+          }
+        ]
+      });
+    } else if (json) {
+      // OpenRouter rejects multipart uploads; it expects base64 audio in a JSON body.
       headers['Content-Type'] = 'application/json';
       body = JSON.stringify({
         model,
@@ -75,6 +118,7 @@ export class Transcriber {
         ...(language ? { language } : {})
       });
     } else {
+      // Other OpenAI-compatible servers (OpenAI, Groq, local) use multipart form-data.
       const form = new FormData();
       form.append('file', new Blob([audioData as BlobPart], { type: mimeType }), `audio.${ext}`);
       form.append('model', model);
@@ -92,6 +136,37 @@ export class Transcriber {
 
     return { response, elapsed: Date.now() - t0 };
   }
+}
+
+/** Response shapes of both routes — `text` for transcriptions, `choices` for chat. */
+interface TranscriptionPayload {
+  text?: string;
+  choices?: { message?: { content?: string | ({ text?: string } | string)[] } }[];
+}
+
+/** Pulls the assistant's reply out of a Chat Completions response. */
+function chatText(payload: TranscriptionPayload): string {
+  const content = payload.choices?.[0]?.message?.content;
+  if (typeof content === 'string') return content.trim();
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => (typeof part === 'string' ? part : part?.text ?? ''))
+      .join('')
+      .trim();
+  }
+  return '';
+}
+
+/**
+ * The chat route has no `language` parameter, so the profile's language becomes
+ * part of the instruction instead.
+ */
+function transcriptionPrompt(profile: ConnectionProfile): string {
+  const prompt = profile.prompt?.trim() || DEFAULT_TRANSCRIPTION_PROMPT;
+  const language = (profile.language ?? '').trim();
+  return language
+    ? `${prompt}\n\nThe speech is in ${language}; transcribe it in that language.`
+    : prompt;
 }
 
 function toBase64(data: Uint8Array | ArrayBuffer): string {

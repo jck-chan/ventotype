@@ -63,7 +63,7 @@ app.whenReady().then(() => {
     settingsWindow.send(IPC.Dictation.LastErrorChanged, error);
   });
 
-  controller.on('requestRecord', () => overlayWindow.sendStart());
+  controller.on('requestRecord', (options) => overlayWindow.sendStart(options));
   controller.on('requestStopRecord', () => overlayWindow.sendStop());
   controller.on('requestCancelRecord', () => overlayWindow.sendCancel());
 

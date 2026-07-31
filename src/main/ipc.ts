@@ -91,6 +91,10 @@ export function registerIpcHandlers(
           return listOpenAiModels(baseURL, apiKey);
         case 'openrouter':
           return listOpenRouterModels(baseURL, apiKey);
+        case 'openai-chat':
+          // Chat-completions providers expose the plain OpenAI /models shape, but
+          // nothing in it says which models accept audio — the list is unfiltered.
+          return listOpenAiModels(baseURL, apiKey);
       }
     }
   );

@@ -164,6 +164,9 @@ html, body {
   gap: 14px;
 }
 
+/* `.field`'s display would otherwise beat the hidden attribute. */
+.field[hidden] { display: none; }
+
 label {
   font-size: 12.5px;
   font-weight: 500;
@@ -176,7 +179,8 @@ label {
 }
 
 /* ── Inputs ──────────────────────────────────────────────────────────────── */
-input {
+input,
+textarea {
   width: 100%;
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -190,11 +194,20 @@ input {
   -webkit-app-region: no-drag;
 }
 
-input::placeholder { color: var(--text-muted); }
+textarea {
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 62px;
+}
 
-input:hover { border-color: rgba(255,255,255,0.12); }
+input::placeholder,
+textarea::placeholder { color: var(--text-muted); }
 
-input:focus {
+input:hover,
+textarea:hover { border-color: rgba(255,255,255,0.12); }
+
+input:focus,
+textarea:focus {
   border-color: var(--border-focus);
   background: var(--bg-hover);
   box-shadow: 0 0 0 3px var(--accent-dim);

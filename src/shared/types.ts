@@ -1,5 +1,5 @@
 /** How the transcription request is encoded for a given provider. */
-export type EndpointType = 'openai' | 'openrouter';
+export type EndpointType = 'openai' | 'openrouter' | 'openai-chat';
 
 /** A saved connection to a Whisper-compatible endpoint. */
 export interface ConnectionProfile {
@@ -10,6 +10,12 @@ export interface ConnectionProfile {
   apiKey: string;
   model: string;
   language: string;
+  /**
+   * Instruction sent alongside the audio on `openai-chat` profiles — a chat model
+   * needs to be told to transcribe. Empty/absent means `DEFAULT_TRANSCRIPTION_PROMPT`.
+   * Unused by the Whisper-style endpoints.
+   */
+  prompt?: string;
 }
 
 export interface AppSettings {
@@ -62,9 +68,31 @@ export const DEFAULT_SETTINGS: Settings = { ...BASE_SETTINGS };
 
 /** Sensible defaults to seed a freshly-created profile of each type. */
 export const ENDPOINT_DEFAULTS: Record<EndpointType, { baseURL: string; model: string }> = {
-  openai:     { baseURL: 'https://api.openai.com/v1', model: 'whisper-1' },
-  openrouter: { baseURL: 'https://openrouter.ai/api/v1', model: 'openai/whisper-large-v3' }
+  openai:        { baseURL: 'https://api.openai.com/v1', model: 'whisper-1' },
+  openrouter:    { baseURL: 'https://openrouter.ai/api/v1', model: 'openai/whisper-large-v3' },
+  // No default model — any multimodal chat model will do, so leave the pick to the user.
+  'openai-chat': { baseURL: 'https://api.openai.com/v1', model: '' }
 };
+
+/** Used by `openai-chat` profiles that leave the prompt field empty. */
+export const DEFAULT_TRANSCRIPTION_PROMPT =
+  'Transcribe the audio exactly as spoken. Reply with the transcript only — no commentary, ' +
+  'no translation, no quotation marks, no timestamps. If there is no intelligible speech, reply with nothing.';
+
+/**
+ * Chat Completions carries audio as a base64 `input_audio` part, and both OpenAI and
+ * Gemini reject anything other than wav/mp3 there ("Invalid audio format"). The
+ * recorder's native WebM/Opus is fine for the /audio/transcriptions endpoints, so
+ * only these profiles pay for the re-encode.
+ */
+export function requiresWavAudio(type: EndpointType): boolean {
+  return type === 'openai-chat';
+}
+
+/** Sent to the overlay renderer when recording starts, so it ships audio the endpoint accepts. */
+export interface RecordOptions {
+  encodeWav: boolean;
+}
 
 /** Returns the active profile, falling back to the first profile or the built-in default. */
 export function activeProfile(s: Settings): ConnectionProfile {

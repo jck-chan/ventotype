@@ -1,6 +1,6 @@
 import { BrowserWindow, screen } from 'electron';
 import { join } from 'node:path';
-import { DictationState } from '@shared/types';
+import { DictationState, RecordOptions } from '@shared/types';
 import { IPC } from '@shared/ipc-channels';
 
 const OVERLAY_PRELOAD = join(__dirname, '../preload/overlay.js');
@@ -82,9 +82,9 @@ export class OverlayWindow {
     this.win = null;
   }
 
-  /** Tell the overlay renderer to begin audio capture. */
-  sendStart(): void {
-    this.win?.webContents.send(IPC.Dictation.Start);
+  /** Tell the overlay renderer to begin audio capture in the format the endpoint needs. */
+  sendStart(options: RecordOptions): void {
+    this.win?.webContents.send(IPC.Dictation.Start, options);
   }
 
   /** Tell the overlay renderer to stop audio capture and ship the blob for transcription. */

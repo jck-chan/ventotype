@@ -109,6 +109,7 @@
                   <select id="endpointType" class="select">
                     <option value="openai">OpenAI-compatible</option>
                     <option value="openrouter">OpenRouter</option>
+                    <option value="openai-chat">OpenAI-compatible (Chat Completions)</option>
                   </select>
                 </div>
               </div>
@@ -178,6 +179,15 @@
                     spellcheck="false"
                   />
                 </div>
+              </div>
+
+              <!-- Chat models need to be told to transcribe; hidden for the
+                   Whisper-style endpoint types. Placeholder is filled from
+                   DEFAULT_TRANSCRIPTION_PROMPT. -->
+              <div class="field" id="promptField" hidden>
+                <label for="prompt">Prompt <span class="label-hint">(optional)</span></label>
+                <textarea id="prompt" rows="3" spellcheck="false"></textarea>
+                <p class="hint">Sent with the audio on every request. Leave empty to use the built-in prompt.</p>
               </div>
             </div>
           </section>

@@ -7,8 +7,8 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('overlayAPI', {
   platform: process.platform,
-  onStart: (cb: () => void): void => {
-    ipcRenderer.on('dictation:start', cb);
+  onStart: (cb: (options: unknown) => void): void => {
+    ipcRenderer.on('dictation:start', (_e, options: unknown) => cb(options));
   },
   onStop: (cb: () => void): void => {
     ipcRenderer.on('dictation:stop', cb);

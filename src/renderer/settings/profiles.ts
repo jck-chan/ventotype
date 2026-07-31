@@ -1,6 +1,7 @@
 import {
   ConnectionProfile,
   DEFAULT_PROFILE,
+  DEFAULT_TRANSCRIPTION_PROMPT,
   EndpointType,
   ENDPOINT_DEFAULTS,
   Settings
@@ -15,7 +16,8 @@ const fields = {
   baseURL: $<HTMLInputElement>('baseURL'),
   apiKey: $<HTMLInputElement>('apiKey'),
   model: $<HTMLInputElement>('model'),
-  language: $<HTMLInputElement>('language')
+  language: $<HTMLInputElement>('language'),
+  prompt: $<HTMLTextAreaElement>('prompt')
 };
 
 export type ProfileFieldId = keyof typeof fields;
@@ -24,6 +26,7 @@ export function isProfileField(fieldId: string): fieldId is ProfileFieldId {
   return fieldId in fields;
 }
 
+const promptField = $('promptField');
 const profileSelect = $<HTMLSelectElement>('profileSelect');
 const addProfileBtn = $<HTMLButtonElement>('addProfile');
 const delProfileBtn = $<HTMLButtonElement>('deleteProfile');
@@ -55,8 +58,9 @@ function syncFormToActive(): void {
   p.type = fields.endpointType.value as EndpointType;
   p.baseURL = fields.baseURL.value.trim();
   p.apiKey = fields.apiKey.value.trim();
-  p.model = fields.model.value.trim() || DEFAULT_PROFILE.model;
+  p.model = fields.model.value.trim() || ENDPOINT_DEFAULTS[p.type].model;
   p.language = fields.language.value.trim();
+  p.prompt = fields.prompt.value.trim();
 }
 
 function loadActiveToForm(): void {
@@ -68,8 +72,15 @@ function loadActiveToForm(): void {
   fields.apiKey.value = p.apiKey;
   fields.model.value = p.model;
   fields.language.value = p.language;
+  fields.prompt.value = p.prompt ?? '';
+  syncTypeVisibility();
   allModels = [];
   hideDropdown();
+}
+
+/** The prompt only reaches the wire on chat-completions profiles. */
+function syncTypeVisibility(): void {
+  promptField.hidden = fields.endpointType.value !== 'openai-chat';
 }
 
 function renderProfileSelect(): void {
@@ -184,6 +195,9 @@ export function initProfiles(
     onDirty();
   };
 
+  // Show what an empty prompt field actually sends.
+  fields.prompt.placeholder = DEFAULT_TRANSCRIPTION_PROMPT;
+
   profileSelect.addEventListener('change', () => {
     syncFormToActive();
     const profileToSave = { ...getActive() };
@@ -235,6 +249,9 @@ export function initProfiles(
     if (!fields.model.value.trim() || knownModels.includes(fields.model.value.trim())) {
       fields.model.value = ENDPOINT_DEFAULTS[type].model;
     }
+    allModels = [];
+    hideDropdown();
+    syncTypeVisibility();
   });
 
   revealBtn.addEventListener('click', () => {

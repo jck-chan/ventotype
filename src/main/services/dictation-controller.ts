@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { DictationError, DictationState } from '@shared/types';
+import { DictationError, DictationState, RecordOptions } from '@shared/types';
 import { Transcriber } from './transcriber';
 import { Typer } from './typer';
 import { log } from './logger';
@@ -7,7 +7,7 @@ import { log } from './logger';
 type ControllerEvents = {
   stateChanged: (state: DictationState, message?: string) => void;
   errorChanged: (error: DictationError) => void;
-  requestRecord: () => void;
+  requestRecord: (options: RecordOptions) => void;
   requestStopRecord: () => void;
   requestCancelRecord: () => void;
 };
@@ -37,7 +37,7 @@ export class DictationController extends EventEmitter {
     if (this.state === 'idle') {
       this.setState('recording');
       this.transcriber.warmUp();
-      this.emit('requestRecord');
+      this.emit('requestRecord', { encodeWav: this.transcriber.needsWavAudio() });
     } else if (this.state === 'recording') {
       this.emit('requestStopRecord');
     }
