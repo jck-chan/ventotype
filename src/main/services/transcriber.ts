@@ -53,6 +53,10 @@ export class Transcriber {
 
     if (!response.ok) {
       const body = await safeText(response);
+      if (profile.type === 'openai-chat' && isEmptyCompletionError(response.status, body)) {
+        log.info(`[${tag}] ← ${response.status} (model returned nothing)  (${elapsed}ms)  0 chars`);
+        return '';
+      }
       log.error(`[${tag}] ← ${response.status} ${response.statusText}  (${elapsed}ms)  body: ${body}`);
       throw new Error(`${name} ${response.status}: ${body || response.statusText}`);
     }
@@ -142,6 +146,25 @@ export class Transcriber {
 interface TranscriptionPayload {
   text?: string;
   choices?: { message?: { content?: string | ({ text?: string } | string)[] } }[];
+}
+
+/**
+ * Some chat-completions proxies (llmapi.ai included) surface a model that
+ * produced literally no output as a 500 instead of a 200 with empty content.
+ * For a transcription prompt, "nothing" means no speech was in the audio —
+ * not a failed request — so this maps that specific shape to an empty result.
+ */
+function isEmptyCompletionError(status: number, body: string): boolean {
+  if (status < 500) return false;
+  try {
+    const parsed = JSON.parse(body) as { error?: { code?: string; message?: string } };
+    return (
+      parsed.error?.code === 'upstream_error' &&
+      /no content or tool calls/i.test(parsed.error?.message ?? '')
+    );
+  } catch {
+    return false;
+  }
 }
 
 /** Pulls the assistant's reply out of a Chat Completions response. */
