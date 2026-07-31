@@ -1,13 +1,14 @@
 # VentoType
 
-Background dictation app for macOS and Windows. \
-Supports OpenAI/OpenRouter-compatible transcription endpoints. \
-Press the shortcut, speak, and your words appear wherever the cursor is. \
+Background dictation app for macOS and Windows.  
+Supports OpenAI/OpenRouter-compatible transcription endpoints.  
+Press the shortcut, speak, and your words appear wherever the cursor is.  
 It has moden UI and doesn't clutter your dock.
 
 ## How it works
 
 After configurations in settings:
+
 - Press the **dictation shortcut** to start/finish dictation.
 - Press the **cancel shortcut** to cancel dictation.
 - After transcribing, VentoType will copy the text result into the clipboard, paste it, and restore the original clipboard content.
@@ -20,21 +21,28 @@ After configurations in settings:
 npm install
 ```
 
+
+
 ### 2a. Development
 
 ```bash
 npm run dev
 ```
 
+
+
 ### 2b. Production build
 
 ```bash
 # macOS
 npm run dist:mac
+# you might need to run `xattr -dr com.apple.quarantine dist/mac-arm64/VentoType.app`
 
 # Windows
 npm run dist:win
 ```
+
+
 
 ## Configure
 
@@ -45,6 +53,8 @@ Open Settings (by clicking the system tray icon), fill in:
 - **Model**
 - **Language**
 - **Shortcuts**
+
+
 
 ## macOS permissions
 
