@@ -1,11 +1,12 @@
 import { EventEmitter } from 'node:events';
-import { DictationState } from '@shared/types';
+import { DictationError, DictationState } from '@shared/types';
 import { Transcriber } from './transcriber';
 import { Typer } from './typer';
 import { log } from './logger';
 
 type ControllerEvents = {
   stateChanged: (state: DictationState, message?: string) => void;
+  errorChanged: (error: DictationError) => void;
   requestRecord: () => void;
   requestStopRecord: () => void;
   requestCancelRecord: () => void;
@@ -13,6 +14,7 @@ type ControllerEvents = {
 
 export class DictationController extends EventEmitter {
   private state: DictationState = 'idle';
+  private lastError: DictationError | null = null;
 
   constructor(
     private readonly transcriber: Transcriber,
@@ -23,6 +25,11 @@ export class DictationController extends EventEmitter {
 
   get currentState(): DictationState {
     return this.state;
+  }
+
+  /** Most recent failure, or null if nothing has failed since launch. */
+  get lastDictationError(): DictationError | null {
+    return this.lastError;
   }
 
   /** Toggle shortcut: idle → recording, recording → stop, everything else ignored. */
@@ -79,6 +86,14 @@ export class DictationController extends EventEmitter {
 
   private setState(next: DictationState, message?: string): void {
     this.state = next;
+
+    // The overlay only shows an error for a couple of seconds, so hold onto it
+    // for Settings to display after the fact.
+    if (next === 'error' && message) {
+      this.lastError = { message, at: Date.now() };
+      this.emit('errorChanged', this.lastError);
+    }
+
     this.emit('stateChanged', next, message);
   }
 }

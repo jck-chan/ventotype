@@ -1,5 +1,7 @@
 import { app, globalShortcut, type Tray } from 'electron';
+import { IPC } from '@shared/ipc-channels';
 import { log } from './services/logger';
+import { requestPendingPermissions } from './services/permissions';
 import { SettingsStore } from './services/settings-store';
 import { ShortcutManager } from './services/shortcuts';
 import { Transcriber } from './services/transcriber';
@@ -56,6 +58,11 @@ app.whenReady().then(() => {
     }
   });
 
+  // Keep the Settings window's error banner live while it's open.
+  controller.on('errorChanged', (error) => {
+    settingsWindow.send(IPC.Dictation.LastErrorChanged, error);
+  });
+
   controller.on('requestRecord', () => overlayWindow.sendStart());
   controller.on('requestStopRecord', () => overlayWindow.sendStop());
   controller.on('requestCancelRecord', () => overlayWindow.sendCancel());
@@ -63,6 +70,10 @@ app.whenReady().then(() => {
   // Register shortcuts from settings, re-register on change.
   applyShortcuts();
   store.on('change', applyShortcuts);
+
+  // Prompt for anything never asked about before. Already-denied permissions are
+  // left to the Settings window, which can explain them and link to System Settings.
+  requestPendingPermissions().catch((err) => log.error('[permissions] startup check', err));
 });
 
 app.on('before-quit', () => {

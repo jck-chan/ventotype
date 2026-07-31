@@ -81,3 +81,14 @@ export interface OverlayStatePayload {
   state: DictationState;
   message?: string;
 }
+
+/**
+ * The most recent dictation failure. Kept in memory only — the overlay shows
+ * errors for a couple of seconds, so Settings holds onto the last one to give
+ * the user something to read after the fact. Cleared on app restart.
+ */
+export interface DictationError {
+  message: string;
+  /** Epoch ms, so the renderer can show how long ago it happened. */
+  at: number;
+}

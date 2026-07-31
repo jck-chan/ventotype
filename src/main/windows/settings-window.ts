@@ -59,4 +59,10 @@ export class SettingsWindow {
   isOpen(): boolean {
     return !!this.win && !this.win.isDestroyed();
   }
+
+  /** Pushes to the settings renderer. No-op when the window isn't open. */
+  send(channel: string, payload?: unknown): void {
+    if (!this.isOpen()) return;
+    this.win?.webContents.send(channel, payload);
+  }
 }

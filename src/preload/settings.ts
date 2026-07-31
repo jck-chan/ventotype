@@ -15,5 +15,12 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   listModels: (baseURL: string, apiKey: string, type: string) =>
     ipcRenderer.invoke('api:list-models', baseURL, apiKey, type),
   getLoginItem: () => ipcRenderer.invoke('app:get-login-item'),
-  setLoginItem: (enable: boolean) => ipcRenderer.invoke('app:set-login-item', enable)
+  setLoginItem: (enable: boolean) => ipcRenderer.invoke('app:set-login-item', enable),
+  getLastError: () => ipcRenderer.invoke('dictation:get-last-error'),
+  onLastErrorChanged: (cb: (error: unknown) => void) => {
+    ipcRenderer.on('dictation:last-error-changed', (_e, error: unknown) => cb(error));
+  },
+  getPermissions: () => ipcRenderer.invoke('permissions:get-all'),
+  requestPermission: (id: string) => ipcRenderer.invoke('permissions:request', id),
+  openPermissionSettings: (id: string) => ipcRenderer.invoke('permissions:open-settings', id)
 });

@@ -271,6 +271,60 @@ input:focus {
   margin-top: -4px;
 }
 
+/* ── Last error banner ───────────────────────────────────────────────────── */
+.error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 11px;
+  margin-bottom: 14px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  border-radius: var(--radius-sm);
+}
+
+.error-banner[hidden] { display: none; }
+
+.error-banner-icon { color: var(--red); flex: none; margin-top: 1px; }
+
+.error-banner-body { flex: 1; min-width: 0; }
+
+.error-banner-head { display: flex; align-items: baseline; gap: 8px; }
+
+.error-banner-title { font-size: 12px; font-weight: 600; color: var(--red); }
+
+.error-banner-time { font-size: 11px; color: var(--text-muted); }
+
+.error-banner-message {
+  margin-top: 3px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  /* API errors are often long unbroken strings (URLs, JSON) — wrap anywhere. */
+  overflow-wrap: anywhere;
+}
+
+.error-banner-dismiss {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.error-banner-dismiss:hover { color: var(--text); }
+
+/* ── Permissions ─────────────────────────────────────────────────────────── */
+.permission-list { display: flex; flex-direction: column; }
+
+.permission-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+
+.permission-status { font-size: 11.5px; white-space: nowrap; }
+.permission-status.ok   { color: var(--green); }
+.permission-status.warn { color: var(--red); }
+
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 .footer {
   flex-shrink: 0;

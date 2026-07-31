@@ -10,7 +10,9 @@ export const IPC = {
     Cancel: 'dictation:cancel',
     AudioBlob: 'dictation:audio-blob',
     StateChanged: 'dictation:state-changed',
-    RecordError: 'dictation:record-error'
+    RecordError: 'dictation:record-error',
+    GetLastError: 'dictation:get-last-error',
+    LastErrorChanged: 'dictation:last-error-changed'
   },
   Overlay: {
     ShowError: 'overlay:show-error'
@@ -21,6 +23,11 @@ export const IPC = {
   },
   Api: {
     ListModels: 'api:list-models'
+  },
+  Permissions: {
+    GetAll: 'permissions:get-all',
+    Request: 'permissions:request',
+    OpenSettings: 'permissions:open-settings'
   },
   App: {
     GetLoginItem: 'app:get-login-item',

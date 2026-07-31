@@ -40,7 +40,7 @@
           tabindex="-1"
           data-tab-target="general-panel"
         >
-          General
+          Settings
         </button>
       </nav>
 
@@ -68,6 +68,28 @@
                   <path d="M10 11v5M14 11v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
               </button>
+            </div>
+
+            <!-- Last dictation failure. Hidden until something actually fails. -->
+            <div id="lastError" class="error-banner" role="status" aria-live="polite" hidden>
+              <svg class="error-banner-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 7v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="12" cy="16.5" r="1.1" fill="currentColor"/>
+              </svg>
+              <div class="error-banner-body">
+                <div class="error-banner-head">
+                  <span class="error-banner-title">Last error</span>
+                  <span class="error-banner-time" id="lastErrorTime"></span>
+                </div>
+                <p class="error-banner-message" id="lastErrorMessage"></p>
+              </div>
+              <button
+                class="error-banner-dismiss"
+                id="dismissLastError"
+                title="Dismiss"
+                aria-label="Dismiss last error"
+              >×</button>
             </div>
 
             <div class="profile-panel">
@@ -201,6 +223,18 @@
               </div>
             </div>
             <p class="hint">Click a field, then press your desired key combination.</p>
+          </section>
+
+          <!-- ── Permissions section ── -->
+          <!-- Rendered from PERMISSION_META; stays hidden on platforms that
+               don't gate any of these. -->
+          <section class="section" id="permissionsSection" hidden>
+            <h2 class="section-title">Permissions</h2>
+            <div class="permission-list" id="permissionList"></div>
+            <p class="hint">
+              Re-checked whenever this window regains focus, so granting one in
+              System Settings updates here as soon as you switch back.
+            </p>
           </section>
 
           <!-- ── Behaviour section ── -->

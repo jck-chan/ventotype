@@ -1,10 +1,13 @@
-import { Settings } from '@shared/types';
+import { DictationError, Settings } from '@shared/types';
+import { PermissionId, PermissionState } from '@shared/permissions';
 import {
   appSettingsPatch,
   initAppSettings,
   loadAppSettings,
   openAtLoginValue
 } from './app-settings';
+import { initLastError } from './last-error';
+import { initPermissions } from './permissions';
 import {
   bumpProfileDirtyVersion,
   flushProfileSave,
@@ -26,6 +29,11 @@ declare global {
       listModels: (baseURL: string, apiKey: string, type: string) => Promise<string[]>;
       getLoginItem: () => Promise<boolean>;
       setLoginItem: (enable: boolean) => Promise<void>;
+      getLastError: () => Promise<DictationError | null>;
+      onLastErrorChanged: (cb: (error: DictationError) => void) => void;
+      getPermissions: () => Promise<PermissionState[]>;
+      requestPermission: (id: PermissionId) => Promise<PermissionState>;
+      openPermissionSettings: (id: PermissionId) => Promise<void>;
     };
   }
 }
@@ -107,6 +115,8 @@ async function save(): Promise<void> {
 }
 
 initTabs();
+initLastError();
+initPermissions();
 initAppSettings(markAppSettingsDirty);
 initProfiles(
   markProfileDirty,

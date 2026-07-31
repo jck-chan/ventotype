@@ -1,8 +1,14 @@
 import { ipcMain, IpcMainInvokeEvent, shell, app } from 'electron';
 import { IPC } from '@shared/ipc-channels';
 import { ConnectionProfile, EndpointType, Settings } from '@shared/types';
+import { PermissionId } from '@shared/permissions';
 import { SettingsStore } from './services/settings-store';
 import { DictationController } from './services/dictation-controller';
+import {
+  checkPermissions,
+  openPermissionSettings,
+  requestPermission
+} from './services/permissions';
 import { log } from './services/logger';
 
 async function listOpenAiModels(baseURL: string, apiKey: string): Promise<string[]> {
@@ -54,6 +60,18 @@ export function registerIpcHandlers(
   // Open troubleshooting files in the OS default editor/viewer.
   ipcMain.handle(IPC.Shell.OpenLogFile, () => shell.openPath(log.logFile));
   ipcMain.handle(IPC.Shell.OpenUserDataFolder, () => shell.openPath(store.dataDir));
+
+  // Last dictation failure — the overlay only flashes it, Settings keeps it.
+  ipcMain.handle(IPC.Dictation.GetLastError, () => controller.lastDictationError);
+
+  // OS permissions
+  ipcMain.handle(IPC.Permissions.GetAll, () => checkPermissions());
+  ipcMain.handle(IPC.Permissions.Request, (_e: IpcMainInvokeEvent, id: PermissionId) =>
+    requestPermission(id)
+  );
+  ipcMain.handle(IPC.Permissions.OpenSettings, (_e: IpcMainInvokeEvent, id: PermissionId) =>
+    openPermissionSettings(id)
+  );
 
   // Login item (open at login)
   ipcMain.handle(IPC.App.GetLoginItem, () =>
