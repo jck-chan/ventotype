@@ -53,7 +53,25 @@
         >
           <section class="section">
             <div class="profile-bar">
-              <select id="profileSelect" class="profile-select"></select>
+              <!-- Custom listbox rather than <select>: the rows carry drag handles
+                   for reordering, which a native option list can't render. -->
+              <div class="profile-picker" id="profilePicker">
+                <button
+                  type="button"
+                  class="profile-trigger"
+                  id="profileTrigger"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                >
+                  <span id="profileTriggerLabel"></span>
+                </button>
+                <ul
+                  class="profile-dropdown"
+                  id="profileDropdown"
+                  role="listbox"
+                  aria-label="Connection profiles"
+                ></ul>
+              </div>
               <button class="btn-secondary" id="addProfile" title="New profile">+ New</button>
               <button
                 class="btn-secondary icon-btn danger"

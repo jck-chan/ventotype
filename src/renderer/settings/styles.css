@@ -422,7 +422,7 @@ textarea:focus {
   gap: 8px;
 }
 
-.profile-bar .profile-select { flex: 1; }
+.profile-bar .profile-picker { flex: 1; min-width: 0; }
 
 /* The selected profile's editable fields, grouped into a contained card so they
    read as belonging to the profile rather than as top-level settings. */
@@ -437,8 +437,10 @@ textarea:focus {
 }
 
 /* ── Selects ─────────────────────────────────────────────────────────────── */
+/* The profile trigger is a button, not a <select>, but it has to read as the
+   same control — so it shares the chevron and the box styling. */
 select.select,
-select.profile-select {
+.profile-trigger {
   width: 100%;
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -459,17 +461,116 @@ select.profile-select {
 }
 
 select.select:hover,
-select.profile-select:hover { border-color: rgba(255,255,255,0.12); }
+.profile-trigger:hover { border-color: rgba(255,255,255,0.12); }
 
 select.select:focus,
-select.profile-select:focus {
+.profile-trigger:focus-visible {
   border-color: var(--border-focus);
   background-color: var(--bg-hover);
   box-shadow: 0 0 0 3px var(--accent-dim);
 }
 
-select.select option,
-select.profile-select option { background: var(--bg); color: var(--text); }
+select.select option { background: var(--bg); color: var(--text); }
+
+/* ── Profile picker ──────────────────────────────────────────────────────── */
+.profile-picker { position: relative; }
+
+.profile-trigger {
+  text-align: left;
+  display: block;
+}
+
+.profile-trigger:disabled { opacity: 0.6; cursor: default; }
+
+.profile-trigger > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  padding: 4px 0;
+}
+
+.profile-dropdown.open { display: block; }
+
+.profile-dropdown::-webkit-scrollbar { width: 4px; }
+.profile-dropdown::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.profile-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px 7px 6px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 80ms, color 80ms;
+}
+
+.profile-option:hover,
+.profile-option.active { background: var(--accent-dim); }
+
+.profile-option-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Only the handle starts a drag — pointer-down on it flips the row's draggable
+   flag, so plain clicks anywhere else still select the profile. */
+.profile-grip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  cursor: grab;
+  border-radius: 3px;
+  transition: color 80ms, background 80ms;
+}
+
+.profile-grip:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.07);
+}
+
+.profile-grip:active { cursor: grabbing; }
+
+.profile-check {
+  flex: none;
+  width: 14px;
+  color: var(--accent);
+  opacity: 0;
+}
+
+.profile-option.active .profile-check { opacity: 1; }
+
+/* The row being dragged: dimmed in place so the gap reads as its landing slot. */
+.profile-option.dragging {
+  opacity: 0.4;
+  background: var(--bg-hover);
+}
 
 /* ── Toggle switch ───────────────────────────────────────────────────────── */
 .toggle-row {

@@ -67,6 +67,7 @@ passed with `dictation:start`. The Whisper-style types keep shipping WebM untouc
 - **State machine** — `DictationController` emits `stateChanged`, `requestRecord`, `requestStopRecord`, `requestCancelRecord`
 - **Cancel** — `cancelShortcut` discards the recording without transcribing
 - **Quit guard** — overlay has `closable: false`; must call `overlayWindow.destroy()` before `app.quit()`
+- **Profile picker** — a custom listbox, not a `<select>`, so each row can carry a drag handle. Dragging reorders the `profiles` array (the DOM leads during the drag, the array is resynced on `dragend`) and marks the form dirty, so the new order lands on Save — same as adding or deleting a profile
 
 
 

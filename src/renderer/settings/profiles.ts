@@ -27,7 +27,10 @@ export function isProfileField(fieldId: string): fieldId is ProfileFieldId {
 }
 
 const promptField = $('promptField');
-const profileSelect = $<HTMLSelectElement>('profileSelect');
+const profilePicker = $('profilePicker');
+const profileTrigger = $<HTMLButtonElement>('profileTrigger');
+const profileTriggerLabel = $('profileTriggerLabel');
+const profileDropdown = $<HTMLUListElement>('profileDropdown');
 const addProfileBtn = $<HTMLButtonElement>('addProfile');
 const delProfileBtn = $<HTMLButtonElement>('deleteProfile');
 const revealBtn = $<HTMLButtonElement>('revealKey');
@@ -83,16 +86,147 @@ function syncTypeVisibility(): void {
   promptField.hidden = fields.endpointType.value !== 'openai-chat';
 }
 
-function renderProfileSelect(): void {
-  profileSelect.innerHTML = '';
+const GRIP_SVG =
+  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+  '<path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+const CHECK_SVG =
+  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+  '<path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" ' +
+  'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function renderProfileList(): void {
+  profileDropdown.innerHTML = '';
+
   for (const p of profiles) {
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = p.name;
-    profileSelect.appendChild(opt);
+    const li = document.createElement('li');
+    li.className = p.id === activeId ? 'profile-option active' : 'profile-option';
+    li.dataset.id = p.id;
+    li.setAttribute('role', 'option');
+    li.setAttribute('aria-selected', String(p.id === activeId));
+
+    const grip = document.createElement('span');
+    grip.className = 'profile-grip';
+    grip.title = 'Drag to reorder';
+    grip.innerHTML = GRIP_SVG;
+
+    // textContent, not innerHTML — profile names are free-form user input.
+    const name = document.createElement('span');
+    name.className = 'profile-option-name';
+    name.textContent = p.name;
+
+    const check = document.createElement('span');
+    check.className = 'profile-check';
+    check.innerHTML = CHECK_SVG;
+
+    li.append(grip, name, check);
+    profileDropdown.appendChild(li);
   }
-  profileSelect.value = activeId;
+
+  profileTriggerLabel.textContent = getActive()?.name ?? '';
   delProfileBtn.disabled = profiles.length <= 1;
+}
+
+function openProfileDropdown(): void {
+  profileDropdown.classList.add('open');
+  profileTrigger.setAttribute('aria-expanded', 'true');
+}
+
+function closeProfileDropdown(): void {
+  profileDropdown.classList.remove('open');
+  profileTrigger.setAttribute('aria-expanded', 'false');
+}
+
+function isProfileDropdownOpen(): boolean {
+  return profileDropdown.classList.contains('open');
+}
+
+/**
+ * Drag-to-reorder for the profile rows. The DOM is the source of truth while a
+ * drag is in flight — rows are moved with `insertBefore` rather than re-rendered,
+ * since replacing the dragged node mid-drag cancels the drag. The `profiles`
+ * array is brought back in sync on `dragend`.
+ */
+function initProfileReorder(): void {
+  let dragging: HTMLLIElement | null = null;
+
+  // Rows are only draggable while the pointer went down on the handle, so text
+  // selection and plain clicks elsewhere in the row behave normally.
+  profileDropdown.addEventListener('pointerdown', (e) => {
+    const row = (e.target as HTMLElement).closest<HTMLLIElement>('.profile-option');
+    if (row && (e.target as HTMLElement).closest('.profile-grip')) row.draggable = true;
+  });
+
+  profileDropdown.addEventListener('dragstart', (e) => {
+    const row = (e.target as HTMLElement).closest<HTMLLIElement>('.profile-option');
+    if (!row) return;
+    dragging = row;
+    row.classList.add('dragging');
+    e.dataTransfer?.setData('text/plain', row.dataset.id ?? '');
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+  });
+
+  profileDropdown.addEventListener('dragover', (e) => {
+    if (!dragging) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+
+    const after = rowAfterPointer(e.clientY);
+    if (after === dragging) return;
+    if (after) profileDropdown.insertBefore(dragging, after);
+    else profileDropdown.appendChild(dragging);
+  });
+
+  // Without this the browser treats the drop as a navigation and animates the
+  // row flying back to its origin.
+  profileDropdown.addEventListener('drop', (e) => e.preventDefault());
+
+  // A press on the handle that never became a drag would otherwise leave the row
+  // draggable, making the whole row a drag target afterwards.
+  profileDropdown.addEventListener('pointerup', () => {
+    if (dragging) return;
+    for (const row of profileDropdown.querySelectorAll<HTMLLIElement>('.profile-option')) {
+      row.draggable = false;
+    }
+  });
+
+  profileDropdown.addEventListener('dragend', () => {
+    dragging?.classList.remove('dragging');
+    dragging = null;
+    for (const row of profileDropdown.querySelectorAll<HTMLLIElement>('.profile-option')) {
+      row.draggable = false;
+    }
+    commitOrderFromDom();
+  });
+}
+
+/** First row whose midpoint is below the pointer — i.e. the drop insertion point. */
+function rowAfterPointer(clientY: number): HTMLLIElement | null {
+  const rows = profileDropdown.querySelectorAll<HTMLLIElement>('.profile-option:not(.dragging)');
+  for (const row of rows) {
+    const box = row.getBoundingClientRect();
+    if (clientY < box.top + box.height / 2) return row;
+  }
+  return null;
+}
+
+/** Reorders `profiles` to match the row order left behind by a drag. */
+function commitOrderFromDom(): void {
+  const reordered: ConnectionProfile[] = [];
+  for (const row of profileDropdown.querySelectorAll<HTMLLIElement>('.profile-option')) {
+    const profile = profiles.find((p) => p.id === row.dataset.id);
+    if (profile) reordered.push(profile);
+  }
+
+  // Bail on any mismatch rather than persisting a list that lost a profile.
+  if (reordered.length !== profiles.length) {
+    renderProfileList();
+    return;
+  }
+  if (reordered.every((p, i) => p.id === profiles[i].id)) return;
+
+  profiles = reordered;
+  markProfileDirtyExternal();
 }
 
 function saveActiveProfileOnly(
@@ -102,7 +236,7 @@ function saveActiveProfileOnly(
   onError: (message: string) => void
 ): void {
   const savedDirtyVersion = profileDirtyVersion;
-  profileSelect.disabled = true;
+  profileTrigger.disabled = true;
 
   const run = async (): Promise<void> => {
     try {
@@ -112,7 +246,7 @@ function saveActiveProfileOnly(
       onError((err as Error).message ?? 'Failed to save profile.');
       console.error(err);
     } finally {
-      profileSelect.disabled = false;
+      profileTrigger.disabled = false;
     }
   };
 
@@ -198,14 +332,56 @@ export function initProfiles(
   // Show what an empty prompt field actually sends.
   fields.prompt.placeholder = DEFAULT_TRANSCRIPTION_PROMPT;
 
-  profileSelect.addEventListener('change', () => {
+  profileTrigger.addEventListener('click', () => {
+    if (isProfileDropdownOpen()) closeProfileDropdown();
+    else openProfileDropdown();
+  });
+
+  const switchTo = (id: string): void => {
+    if (id === activeId) return;
     syncFormToActive();
     const profileToSave = { ...getActive() };
-    activeId = profileSelect.value;
-    renderProfileSelect();
+    activeId = id;
+    renderProfileList();
     loadActiveToForm();
     saveActiveProfileOnly(profileToSave, activeId, onProfileSaved, onProfileSaveError);
+  };
+
+  profileDropdown.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    // The handle is for dragging; a click that lands on it shouldn't switch profile.
+    if (target.closest('.profile-grip')) return;
+
+    const id = target.closest<HTMLLIElement>('.profile-option')?.dataset.id;
+    if (!id) return;
+
+    closeProfileDropdown();
+    switchTo(id);
   });
+
+  // Arrow keys step through profiles the way a focused native <select> did.
+  profileTrigger.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const i = profiles.findIndex((p) => p.id === activeId);
+    const next = profiles[i + (e.key === 'ArrowDown' ? 1 : -1)];
+    if (next) switchTo(next.id);
+  });
+
+  document.addEventListener('mousedown', (e) => {
+    if (isProfileDropdownOpen() && !profilePicker.contains(e.target as Node)) {
+      closeProfileDropdown();
+    }
+  });
+
+  profilePicker.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isProfileDropdownOpen()) {
+      closeProfileDropdown();
+      profileTrigger.focus();
+    }
+  });
+
+  initProfileReorder();
 
   addProfileBtn.addEventListener('click', () => {
     syncFormToActive();
@@ -216,7 +392,7 @@ export function initProfiles(
     };
     profiles.push(profile);
     activeId = profile.id;
-    renderProfileSelect();
+    renderProfileList();
     loadActiveToForm();
     fields.profileName.focus();
     fields.profileName.select();
@@ -229,14 +405,18 @@ export function initProfiles(
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     profiles = profiles.filter((p) => p.id !== activeId);
     activeId = profiles[0].id;
-    renderProfileSelect();
+    renderProfileList();
     loadActiveToForm();
     markProfileDirtyExternal();
   });
 
   fields.profileName.addEventListener('input', () => {
-    const opt = profileSelect.querySelector<HTMLOptionElement>(`option[value="${activeId}"]`);
-    if (opt) opt.textContent = fields.profileName.value.trim() || 'Untitled';
+    const label = fields.profileName.value.trim() || 'Untitled';
+    const row = profileDropdown.querySelector<HTMLElement>(
+      `.profile-option[data-id="${CSS.escape(activeId)}"] .profile-option-name`
+    );
+    if (row) row.textContent = label;
+    profileTriggerLabel.textContent = label;
   });
 
   fields.endpointType.addEventListener('change', () => {
@@ -308,7 +488,7 @@ export function loadProfiles(s: Settings): void {
     ? s.activeProfileId
     : profiles[0].id;
 
-  renderProfileSelect();
+  renderProfileList();
   loadActiveToForm();
 }
 
