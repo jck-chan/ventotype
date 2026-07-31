@@ -87,9 +87,9 @@ export function registerIpcHandlers(
     IPC.Api.ListModels,
     async (_e: IpcMainInvokeEvent, baseURL: string, apiKey: string, type: EndpointType) => {
       switch (type) {
-        case 'openai':
+        case 'openai-transcribe':
           return listOpenAiModels(baseURL, apiKey);
-        case 'openrouter':
+        case 'openrouter-transcribe':
           return listOpenRouterModels(baseURL, apiKey);
         case 'openai-chat':
           // Chat-completions providers expose the plain OpenAI /models shape, but

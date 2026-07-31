@@ -16,9 +16,9 @@ export interface TranscribeInput {
 
 /** Log tag and user-facing name per endpoint type — chat calls aren't Whisper calls. */
 const API_LABEL: Record<EndpointType, { tag: string; name: string }> = {
-  openai:        { tag: 'whisper', name: 'Whisper API' },
-  openrouter:    { tag: 'whisper', name: 'Whisper API' },
-  'openai-chat': { tag: 'chat',    name: 'Chat API' }
+  'openai-transcribe':     { tag: 'whisper', name: 'Whisper API' },
+  'openrouter-transcribe': { tag: 'whisper', name: 'Whisper API' },
+  'openai-chat':           { tag: 'chat',    name: 'Chat API' }
 };
 
 export class Transcriber {
@@ -81,7 +81,7 @@ export class Transcriber {
     const ext      = mimeToExtension(mimeType);
     const sizeKB   = (audioData.byteLength / 1024).toFixed(1);
     const chat     = profile.type === 'openai-chat';
-    const json     = profile.type === 'openrouter';
+    const json     = profile.type === 'openrouter-transcribe';
     const endpoint = chat ? `${base}/chat/completions` : `${base}/audio/transcriptions`;
 
     log.info(
@@ -115,11 +115,14 @@ export class Transcriber {
       });
     } else if (json) {
       // OpenRouter rejects multipart uploads; it expects base64 audio in a JSON body.
+      // `prompt` here is Whisper's own param — vocabulary/style bias, not an
+      // instruction — so unlike the chat prompt it has no built-in default.
       headers['Content-Type'] = 'application/json';
       body = JSON.stringify({
         model,
         input_audio: { data: toBase64(audioData), format: ext },
-        ...(language ? { language } : {})
+        ...(language ? { language } : {}),
+        ...(whisperPrompt(profile) ? { prompt: whisperPrompt(profile) } : {})
       });
     } else {
       // Other OpenAI-compatible servers (OpenAI, Groq, local) use multipart form-data.
@@ -127,6 +130,7 @@ export class Transcriber {
       form.append('file', new Blob([audioData as BlobPart], { type: mimeType }), `audio.${ext}`);
       form.append('model', model);
       if (language) form.append('language', language);
+      if (whisperPrompt(profile)) form.append('prompt', whisperPrompt(profile));
       form.append('response_format', 'json');
       body = form;
     }
@@ -190,6 +194,15 @@ function transcriptionPrompt(profile: ConnectionProfile): string {
   return language
     ? `${prompt}\n\nThe speech is in ${language}; transcribe it in that language.`
     : prompt;
+}
+
+/**
+ * Whisper's `prompt` biases vocabulary/style (proper nouns, acronyms, a
+ * continuation cue) rather than instructing the model — so unlike the chat
+ * prompt, an empty field means "send nothing," not a built-in default.
+ */
+function whisperPrompt(profile: ConnectionProfile): string {
+  return profile.prompt?.trim() ?? '';
 }
 
 function toBase64(data: Uint8Array | ArrayBuffer): string {

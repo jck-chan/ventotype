@@ -24,6 +24,14 @@ src/main/
     typer.ts                — types transcribed text into focused app
     settings-store.ts       — persists settings (electron-store)
     menu-bar-tray.ts        — tray icon + context menu (Settings / Quit)
+  user-data/
+    migrations/             — versioned, sequential on-disk schema migrations.
+                              001 is a permanent no-op: USER_DATA_VERSION was set
+                              to 1, and manifests started being written at that
+                              version, before any real migration existed — so
+                              every migration lands at version ≥ 2, never 1.
+    runner.ts               — brings userData up to USER_DATA_VERSION on launch
+    infer-version.ts        — version of on-disk data with no manifest yet
 
 src/preload/                — contextBridge exposures for overlay and settings
 src/renderer/
@@ -39,12 +47,13 @@ src/shared/
 ## Connection types
 
 A profile's `type` decides how the audio is sent. All three are configured the same way
-(base URL, API key, model, language) — only the request shape differs.
+(base URL, API key, model, language, prompt) — only the request shape, and what "prompt"
+means, differs.
 
 | Type | Endpoint | Request | Notes |
 | --- | --- | --- | --- |
-| `openai` | `/audio/transcriptions` | multipart form-data | OpenAI, Groq, local Whisper servers |
-| `openrouter` | `/audio/transcriptions` | JSON, base64 `input_audio` | OpenRouter rejects multipart |
+| `openai-transcribe` | `/audio/transcriptions` | multipart form-data | OpenAI, Groq, local Whisper servers |
+| `openrouter-transcribe` | `/audio/transcriptions` | JSON, base64 `input_audio` | OpenRouter rejects multipart |
 | `openai-chat` | `/chat/completions` | JSON, base64 `input_audio` content part | Multimodal chat models |
 
 `openai-chat` exists for models that transcribe well but ship no transcription route —
@@ -53,6 +62,12 @@ turn, next to a text part telling the model to transcribe; the transcript comes 
 `choices[0].message.content`. That instruction is the profile's **Prompt** field
 (`DEFAULT_TRANSCRIPTION_PROMPT` when empty), and since chat has no `language` parameter,
 the profile's language is appended to the prompt instead.
+
+The `openai-transcribe` and `openrouter-transcribe` types also send **Prompt**, but as Whisper's own `prompt`
+parameter — a vocabulary/style bias (proper nouns, acronyms, a continuation cue), not an
+instruction. Unlike the chat type, an empty field sends nothing; there's no
+`DEFAULT_TRANSCRIPTION_PROMPT`-style fallback, since a keyword hint has no sensible default.
+See `whisperPrompt()` vs `transcriptionPrompt()` in `transcriber.ts`.
 
 Chat Completions only accepts `wav`/`mp3` in `input_audio` (both OpenAI and Gemini), so
 for these profiles the overlay renderer re-encodes its WebM/Opus take as 16 kHz mono WAV

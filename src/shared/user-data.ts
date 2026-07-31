@@ -1,5 +1,11 @@
-/** Latest user-data schema version. Bump when adding a migration. */
-export const USER_DATA_VERSION = 1;
+/**
+ * Latest user-data schema version. Bump when adding a migration.
+ * Version 1 is a historical no-op (see migrations/001-baseline.ts) — it was
+ * stamped onto every install's manifest before any real migration existed,
+ * so it can't carry one now without silently un-applying itself on installs
+ * that already sit at "1".
+ */
+export const USER_DATA_VERSION = 2;
 
 /** Subfolder under Electron's userData where VentoType stores its files. */
 export const USER_DATA_SUBDIR = 'data';

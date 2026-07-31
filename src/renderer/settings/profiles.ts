@@ -11,7 +11,6 @@ const $ = <T extends HTMLElement>(id: string): T =>
   document.getElementById(id) as T;
 
 const fields = {
-  profileName: $<HTMLInputElement>('profileName'),
   endpointType: $<HTMLSelectElement>('endpointType'),
   baseURL: $<HTMLInputElement>('baseURL'),
   apiKey: $<HTMLInputElement>('apiKey'),
@@ -26,13 +25,17 @@ export function isProfileField(fieldId: string): fieldId is ProfileFieldId {
   return fieldId in fields;
 }
 
-const promptField = $('promptField');
+const promptHint = $('promptHint');
 const profilePicker = $('profilePicker');
 const profileTrigger = $<HTMLButtonElement>('profileTrigger');
 const profileTriggerLabel = $('profileTriggerLabel');
 const profileDropdown = $<HTMLUListElement>('profileDropdown');
 const addProfileBtn = $<HTMLButtonElement>('addProfile');
 const delProfileBtn = $<HTMLButtonElement>('deleteProfile');
+const renameBtn = $<HTMLButtonElement>('renameProfile');
+const renameDialog = $<HTMLDialogElement>('renameDialog');
+const renameInput = $<HTMLInputElement>('renameInput');
+const renameCancelBtn = $<HTMLButtonElement>('renameCancel');
 const revealBtn = $<HTMLButtonElement>('revealKey');
 const eyeShow = $('eye-show');
 const eyeHide = $('eye-hide');
@@ -57,7 +60,6 @@ function getActive(): ConnectionProfile {
 function syncFormToActive(): void {
   const p = getActive();
   if (!p) return;
-  p.name = fields.profileName.value.trim() || 'Untitled';
   p.type = fields.endpointType.value as EndpointType;
   p.baseURL = fields.baseURL.value.trim();
   p.apiKey = fields.apiKey.value.trim();
@@ -69,21 +71,29 @@ function syncFormToActive(): void {
 function loadActiveToForm(): void {
   const p = getActive();
   if (!p) return;
-  fields.profileName.value = p.name;
   fields.endpointType.value = p.type;
   fields.baseURL.value = p.baseURL;
   fields.apiKey.value = p.apiKey;
   fields.model.value = p.model;
   fields.language.value = p.language;
   fields.prompt.value = p.prompt ?? '';
-  syncTypeVisibility();
+  syncPromptGuidance();
   allModels = [];
   hideDropdown();
 }
 
-/** The prompt only reaches the wire on chat-completions profiles. */
-function syncTypeVisibility(): void {
-  promptField.hidden = fields.endpointType.value !== 'openai-chat';
+/**
+ * The prompt field is shared by every endpoint type but means something
+ * different on each: an instruction to transcribe on chat-completions
+ * profiles, or Whisper's own vocabulary/style-bias prompt on the Whisper-style
+ * types (which has no built-in default, unlike the chat instruction).
+ */
+function syncPromptGuidance(): void {
+  const isChat = fields.endpointType.value === 'openai-chat';
+  fields.prompt.placeholder = isChat ? DEFAULT_TRANSCRIPTION_PROMPT : '';
+  promptHint.textContent = isChat
+    ? 'Sent with the audio on every request. Leave empty to use the built-in prompt.'
+    : 'Optional vocabulary hint for Whisper — proper nouns, acronyms, or jargon likely to appear. Leave empty to send none.';
 }
 
 const GRIP_SVG =
@@ -139,6 +149,14 @@ function closeProfileDropdown(): void {
 
 function isProfileDropdownOpen(): boolean {
   return profileDropdown.classList.contains('open');
+}
+
+function openRenameDialog(): void {
+  const p = getActive();
+  if (!p) return;
+  renameInput.value = p.name;
+  renameDialog.showModal();
+  renameInput.select();
 }
 
 /**
@@ -329,9 +347,6 @@ export function initProfiles(
     onDirty();
   };
 
-  // Show what an empty prompt field actually sends.
-  fields.prompt.placeholder = DEFAULT_TRANSCRIPTION_PROMPT;
-
   profileTrigger.addEventListener('click', () => {
     if (isProfileDropdownOpen()) closeProfileDropdown();
     else openProfileDropdown();
@@ -394,9 +409,8 @@ export function initProfiles(
     activeId = profile.id;
     renderProfileList();
     loadActiveToForm();
-    fields.profileName.focus();
-    fields.profileName.select();
     markProfileDirtyExternal();
+    openRenameDialog();
   });
 
   delProfileBtn.addEventListener('click', () => {
@@ -410,13 +424,19 @@ export function initProfiles(
     markProfileDirtyExternal();
   });
 
-  fields.profileName.addEventListener('input', () => {
-    const label = fields.profileName.value.trim() || 'Untitled';
-    const row = profileDropdown.querySelector<HTMLElement>(
-      `.profile-option[data-id="${CSS.escape(activeId)}"] .profile-option-name`
-    );
-    if (row) row.textContent = label;
-    profileTriggerLabel.textContent = label;
+  renameBtn.addEventListener('click', openRenameDialog);
+  renameCancelBtn.addEventListener('click', () => renameDialog.close());
+
+  // <form method="dialog"> closes the dialog on submit and sets returnValue to
+  // the clicked submitter's `value` — Escape or the Cancel button leave it empty,
+  // so only an explicit Save is committed here.
+  renameDialog.addEventListener('close', () => {
+    if (renameDialog.returnValue !== 'save') return;
+    const p = getActive();
+    if (!p) return;
+    p.name = renameInput.value.trim() || 'Untitled';
+    renderProfileList();
+    markProfileDirtyExternal();
   });
 
   fields.endpointType.addEventListener('change', () => {
@@ -431,7 +451,7 @@ export function initProfiles(
     }
     allModels = [];
     hideDropdown();
-    syncTypeVisibility();
+    syncPromptGuidance();
   });
 
   revealBtn.addEventListener('click', () => {

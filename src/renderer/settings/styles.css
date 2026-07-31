@@ -723,5 +723,43 @@ select.select option { background: var(--bg); color: var(--text); }
   color: var(--text);
 }
 
+/* ── Rename dialog ───────────────────────────────────────────────────────── */
+/* The global `*` reset zeroes margin, which kills the UA stylesheet's
+   margin:auto centering for <dialog> — so centering is set explicitly here. */
+dialog.rename-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: 320px;
+  max-width: calc(100vw - 48px);
+  padding: 20px;
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+}
+
+dialog.rename-dialog::backdrop { background: rgba(0,0,0,0.5); }
+
+#renameForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#renameForm label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.rename-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
 /* ── Utility ─────────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }

@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { USER_DATA_VERSION, USER_DATA_MANIFEST_FILE, UserDataManifest } from '@shared/user-data';
+import { USER_DATA_VERSION, UserDataManifest } from '@shared/user-data';
 import { userDataPaths } from './paths';
 
 function readManifestFile(path: string): UserDataManifest | null {
@@ -17,7 +17,14 @@ export function readManifest(electronUserDataDir: string): UserDataManifest | nu
   return readManifestFile(userDataPaths(electronUserDataDir).manifest);
 }
 
-/** Fresh install or unknown state: treat as current version. */
-export function inferUserDataVersion(_electronUserDataDir: string): number {
-  return USER_DATA_VERSION;
+/**
+ * No manifest but settings/profiles already exist on disk: this install
+ * predates the manifest system, so treat it as version 0 and run every
+ * migration. No settings/profiles either means a genuine fresh install —
+ * there's nothing on disk yet to migrate from.
+ */
+export function inferUserDataVersion(electronUserDataDir: string): number {
+  const paths = userDataPaths(electronUserDataDir);
+  const hasExistingData = existsSync(paths.settings) || existsSync(paths.profiles);
+  return hasExistingData ? 0 : USER_DATA_VERSION;
 }

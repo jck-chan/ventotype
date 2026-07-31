@@ -1,5 +1,5 @@
 /** How the transcription request is encoded for a given provider. */
-export type EndpointType = 'openai' | 'openrouter' | 'openai-chat';
+export type EndpointType = 'openai-transcribe' | 'openrouter-transcribe' | 'openai-chat';
 
 /** A saved connection to a Whisper-compatible endpoint. */
 export interface ConnectionProfile {
@@ -11,9 +11,11 @@ export interface ConnectionProfile {
   model: string;
   language: string;
   /**
-   * Instruction sent alongside the audio on `openai-chat` profiles — a chat model
-   * needs to be told to transcribe. Empty/absent means `DEFAULT_TRANSCRIPTION_PROMPT`.
-   * Unused by the Whisper-style endpoints.
+   * Sent alongside the audio on every request, but means something different per
+   * type: on `openai-chat` it's the instruction telling the model to transcribe
+   * (empty/absent falls back to `DEFAULT_TRANSCRIPTION_PROMPT`); on the
+   * Whisper-style types it's Whisper's own `prompt` param — vocabulary/style
+   * bias, not an instruction — so empty there just means "send nothing."
    */
   prompt?: string;
 }
@@ -35,7 +37,7 @@ export interface Settings extends AppSettings, ProfilesData {}
 export const DEFAULT_PROFILE: ConnectionProfile = {
   id: 'default',
   name: 'main',
-  type: 'openai',
+  type: 'openai-transcribe',
   baseURL: 'https://api.openai.com/v1',
   apiKey: '',
   model: 'whisper-1',
@@ -68,10 +70,10 @@ export const DEFAULT_SETTINGS: Settings = { ...BASE_SETTINGS };
 
 /** Sensible defaults to seed a freshly-created profile of each type. */
 export const ENDPOINT_DEFAULTS: Record<EndpointType, { baseURL: string; model: string }> = {
-  openai:        { baseURL: 'https://api.openai.com/v1', model: 'whisper-1' },
-  openrouter:    { baseURL: 'https://openrouter.ai/api/v1', model: 'openai/whisper-large-v3' },
+  'openai-transcribe':     { baseURL: 'https://api.openai.com/v1', model: 'whisper-1' },
+  'openrouter-transcribe': { baseURL: 'https://openrouter.ai/api/v1', model: 'openai/whisper-large-v3' },
   // No default model — any multimodal chat model will do, so leave the pick to the user.
-  'openai-chat': { baseURL: 'https://api.openai.com/v1', model: '' }
+  'openai-chat':           { baseURL: 'https://api.openai.com/v1', model: '' }
 };
 
 /** Used by `openai-chat` profiles that leave the prompt field empty. */

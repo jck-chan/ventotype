@@ -72,6 +72,16 @@
                   aria-label="Connection profiles"
                 ></ul>
               </div>
+              <button
+                class="btn-secondary icon-btn"
+                id="renameProfile"
+                title="Rename this profile"
+                aria-label="Rename this profile"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
               <button class="btn-secondary" id="addProfile" title="New profile">+ New</button>
               <button
                 class="btn-secondary icon-btn danger"
@@ -111,58 +121,47 @@
             </div>
 
             <div class="profile-panel">
+              <div class="field">
+                <label for="endpointType">Endpoint type</label>
+                <select id="endpointType" class="select">
+                  <option value="openai-transcribe">OpenAI (Transcribe)</option>
+                  <option value="openai-chat">OpenAI (Chat Completions)</option>
+                  <option value="openrouter-transcribe">OpenRouter (Transcribe)</option>
+                </select>
+              </div>
+
               <div class="field-row">
                 <div class="field">
-                  <label for="profileName">Profile name</label>
+                  <label for="baseURL">Base URL</label>
                   <input
-                    id="profileName"
-                    type="text"
-                    placeholder="My endpoint"
+                    id="baseURL"
+                    type="url"
+                    placeholder="https://api.openai.com/v1"
                     autocomplete="off"
                     spellcheck="false"
                   />
                 </div>
                 <div class="field">
-                  <label for="endpointType">Endpoint type</label>
-                  <select id="endpointType" class="select">
-                    <option value="openai">OpenAI-compatible</option>
-                    <option value="openrouter">OpenRouter</option>
-                    <option value="openai-chat">OpenAI-compatible (Chat Completions)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="field">
-                <label for="baseURL">Base URL</label>
-                <input
-                  id="baseURL"
-                  type="url"
-                  placeholder="https://api.openai.com/v1"
-                  autocomplete="off"
-                  spellcheck="false"
-                />
-              </div>
-
-              <div class="field">
-                <label for="apiKey">API key</label>
-                <div class="input-wrapper">
-                  <input
-                    id="apiKey"
-                    type="password"
-                    placeholder="sk-••••••••"
-                    autocomplete="off"
-                    spellcheck="false"
-                  />
-                  <button class="reveal-btn" id="revealKey" title="Show / hide">
-                    <svg id="eye-show" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="1.8"/>
-                      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
-                    </svg>
-                    <svg id="eye-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" class="hidden">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                      <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                    </svg>
-                  </button>
+                  <label for="apiKey">API key</label>
+                  <div class="input-wrapper">
+                    <input
+                      id="apiKey"
+                      type="password"
+                      placeholder="sk-••••••••"
+                      autocomplete="off"
+                      spellcheck="false"
+                    />
+                    <button class="reveal-btn" id="revealKey" title="Show / hide">
+                      <svg id="eye-show" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="1.8"/>
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+                      </svg>
+                      <svg id="eye-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" class="hidden">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -199,13 +198,14 @@
                 </div>
               </div>
 
-              <!-- Chat models need to be told to transcribe; hidden for the
-                   Whisper-style endpoint types. Placeholder is filled from
-                   DEFAULT_TRANSCRIPTION_PROMPT. -->
-              <div class="field" id="promptField" hidden>
+              <!-- Meaning depends on endpoint type: an instruction on openai-chat
+                   (placeholder shows DEFAULT_TRANSCRIPTION_PROMPT), or Whisper's
+                   own vocabulary/style-bias prompt on the Whisper-style types
+                   (no built-in default there) — text updated by syncPromptGuidance(). -->
+              <div class="field" id="promptField">
                 <label for="prompt">Prompt <span class="label-hint">(optional)</span></label>
                 <textarea id="prompt" rows="3" spellcheck="false"></textarea>
-                <p class="hint">Sent with the audio on every request. Leave empty to use the built-in prompt.</p>
+                <p class="hint" id="promptHint"></p>
               </div>
             </div>
           </section>
@@ -312,6 +312,18 @@
         <button id="saveBtn" class="btn-primary">Save changes</button>
       </footer>
     </div>
+
+    <dialog id="renameDialog" class="rename-dialog">
+      <form id="renameForm" method="dialog">
+        <label for="renameInput">Rename profile</label>
+        <input id="renameInput" type="text" autocomplete="off" spellcheck="false" />
+        <div class="rename-actions">
+          <button type="button" class="btn-secondary" id="renameCancel">Cancel</button>
+          <button type="submit" class="btn-primary" id="renameSave" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

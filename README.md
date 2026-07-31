@@ -58,14 +58,19 @@ Open Settings (by clicking the system tray icon), fill in:
 
 ### Endpoint types
 
-- **OpenAI-compatible** — `/audio/transcriptions` (OpenAI, Groq, local Whisper servers)
-- **OpenRouter** — same route, base64 JSON body
-- **OpenAI-compatible (Chat Completions)** — `/chat/completions`, for multimodal models
+- **OpenAI (Transcribe)** — `/audio/transcriptions` (OpenAI, Groq, local Whisper servers)
+- **OpenRouter (Transcribe)** — same route, base64 JSON body
+- **OpenAI (Chat Completions)** — `/chat/completions`, for multimodal models
   that transcribe well but have no transcription route
 
-For the chat type, the audio is sent as part of a normal chat message with an instruction
-to transcribe it. The **Prompt** field customises that instruction; leave it empty for the
-built-in one. For Gemini, use its OpenAI-compatible base URL:
+All three types have a **Prompt** field, but it means something different per type. For the
+chat type, the audio is sent as part of a normal chat message with an instruction to
+transcribe it — the field customises that instruction; leave it empty for the built-in one.
+For the two Whisper-style types, it's Whisper's own `prompt` parameter — a vocabulary/style
+hint (proper nouns, acronyms, jargon likely to appear), not an instruction — so leaving it
+empty sends nothing, with no built-in default.
+
+For Gemini (chat type), use its OpenAI-compatible base URL:
 
 ```
 https://generativelanguage.googleapis.com/v1beta/openai
