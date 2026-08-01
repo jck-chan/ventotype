@@ -42,6 +42,18 @@
         >
           Settings
         </button>
+        <button
+          id="tab-playground"
+          class="tab-btn"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="playground-panel"
+          tabindex="-1"
+          data-tab-target="playground-panel"
+        >
+          Playground
+        </button>
       </nav>
 
       <main class="content">
@@ -305,6 +317,57 @@
           </section>
         </div>
 
+        <div
+          id="playground-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="tab-playground"
+          hidden
+        >
+          <section class="section">
+            <div class="field">
+              <label for="playgroundProfile">Profile</label>
+              <select id="playgroundProfile" class="select"></select>
+            </div>
+
+            <div class="playground-dropzone" id="playgroundDropzone">
+              <svg class="playground-dropzone-icon" width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <p class="playground-dropzone-title">Drag and drop an audio file here</p>
+
+              <div class="playground-dropzone-actions">
+                <button type="button" class="btn-primary playground-record-btn" id="playgroundRecordBtn">
+                  <span class="playground-record-dot" id="playgroundRecordDot"></span>
+                  <span id="playgroundRecordLabel">Record</span>
+                </button>
+                <span class="playground-dropzone-or">or</span>
+                <button type="button" class="btn-secondary" id="playgroundBrowseBtn">Browse files</button>
+              </div>
+
+              <input type="file" id="playgroundFileInput" accept="audio/*" hidden />
+            </div>
+
+            <p class="hint error-text" id="playgroundError" hidden></p>
+
+            <div class="playground-clip" id="playgroundClip" hidden>
+              <audio id="playgroundAudioPreview" controls></audio>
+              <span class="playground-clip-name" id="playgroundClipName"></span>
+              <button type="button" class="btn-primary" id="playgroundSendBtn">Transcribe</button>
+            </div>
+
+            <div class="playground-result" id="playgroundResult" hidden>
+              <div class="playground-result-head">
+                <span id="playgroundResultStatus"></span>
+                <button type="button" class="btn-secondary" id="playgroundInspectBtn">View raw JSON</button>
+              </div>
+              <p class="hint" id="playgroundResultMeta"></p>
+              <textarea id="playgroundTranscript" rows="6" readonly spellcheck="false"></textarea>
+            </div>
+          </section>
+        </div>
+
       </main>
 
       <footer class="footer">
@@ -312,6 +375,17 @@
         <button id="saveBtn" class="btn-primary">Save changes</button>
       </footer>
     </div>
+
+    <dialog id="playgroundJsonDialog" class="json-dialog">
+      <div class="json-dialog-head">
+        <span>Raw response</span>
+        <div class="json-dialog-actions">
+          <button type="button" class="btn-secondary" id="playgroundCopyJson">Copy</button>
+          <button type="button" class="btn-secondary icon-btn" id="playgroundCloseJson" aria-label="Close">×</button>
+        </div>
+      </div>
+      <pre id="playgroundJsonBody"></pre>
+    </dialog>
 
     <dialog id="renameDialog" class="rename-dialog">
       <form id="renameForm" method="dialog">

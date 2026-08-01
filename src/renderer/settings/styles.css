@@ -761,5 +761,189 @@ dialog.rename-dialog::backdrop { background: rgba(0,0,0,0.5); }
   margin-top: 6px;
 }
 
+/* ── Playground ──────────────────────────────────────────────────────────── */
+.playground-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 220px;
+  padding: 32px 24px;
+  text-align: center;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  transition: border-color 140ms, background 140ms, color 140ms;
+}
+
+.playground-dropzone-icon { color: var(--text-muted); transition: color 140ms; }
+
+.playground-dropzone-title {
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.playground-dropzone.dragover {
+  border-color: var(--border-focus);
+  background: var(--accent-dim);
+  color: var(--text);
+}
+
+.playground-dropzone.dragover .playground-dropzone-icon { color: var(--accent); }
+
+.playground-dropzone-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.playground-dropzone-or {
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.playground-record-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.playground-record-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.6);
+  transition: background 140ms;
+}
+
+.playground-record-btn.recording {
+  background: var(--red);
+}
+
+.playground-record-btn.recording:hover { background: var(--red); }
+
+.playground-record-btn.recording .playground-record-dot {
+  animation: playground-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes playground-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.error-text { color: var(--red); }
+.error-text[hidden] { display: none; }
+
+/* `[hidden]` would otherwise lose to the class's own `display: flex`. */
+.playground-clip[hidden],
+.playground-result[hidden] { display: none; }
+
+.playground-clip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.playground-clip audio {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+}
+
+.playground-clip-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playground-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playground-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.playground-result-head span {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.playground-result-head span.ok  { color: var(--green); }
+.playground-result-head span.err { color: var(--red); }
+
+#playgroundTranscript {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12.5px;
+}
+
+/* ── JSON inspect dialog ─────────────────────────────────────────────────── */
+/* `display: flex` only applies once [open] is set — otherwise it would
+   override the UA default of `display: none` and show the dialog always. */
+dialog.json-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(560px, calc(100vw - 48px));
+  max-height: min(70vh, 560px);
+  padding: 16px;
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+}
+
+dialog.json-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+dialog.json-dialog::backdrop { background: rgba(0,0,0,0.5); }
+
+.json-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.json-dialog-actions { display: flex; gap: 8px; }
+
+#playgroundJsonBody {
+  flex: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* ── Utility ─────────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }

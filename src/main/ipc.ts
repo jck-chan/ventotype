@@ -4,6 +4,7 @@ import { ConnectionProfile, EndpointType, Settings } from '@shared/types';
 import { PermissionId } from '@shared/permissions';
 import { SettingsStore } from './services/settings-store';
 import { DictationController } from './services/dictation-controller';
+import { Transcriber } from './services/transcriber';
 import {
   checkPermissions,
   openPermissionSettings,
@@ -33,7 +34,8 @@ async function listOpenRouterModels(baseURL: string, apiKey: string): Promise<st
 
 export function registerIpcHandlers(
   store: SettingsStore,
-  controller: DictationController
+  controller: DictationController,
+  transcriber: Transcriber
 ): void {
   // Settings
   ipcMain.handle(IPC.Settings.Get, () => store.value);
@@ -96,6 +98,18 @@ export function registerIpcHandlers(
           // nothing in it says which models accept audio — the list is unfiltered.
           return listOpenAiModels(baseURL, apiKey);
       }
+    }
+  );
+
+  // Playground: transcribe an in-app recording or dropped file against any
+  // saved profile (not necessarily the active one) and hand back the raw
+  // response for inspection.
+  ipcMain.handle(
+    IPC.Playground.Transcribe,
+    (_e: IpcMainInvokeEvent, audio: ArrayBuffer, mimeType: string, profileId: string) => {
+      const profile = store.value.profiles.find((p) => p.id === profileId);
+      if (!profile) throw new Error('Profile not found. Save it in Profiles first.');
+      return transcriber.transcribeInspect({ audio, mimeType }, profile);
     }
   );
 }

@@ -125,3 +125,19 @@ export interface DictationError {
   /** Epoch ms, so the renderer can show how long ago it happened. */
   at: number;
 }
+
+/**
+ * Full result of a Playground transcription request. Unlike the production
+ * dictation path, this is kept even on a non-2xx response — `raw` and
+ * `status` are populated either way — since inspecting exactly what the
+ * server sent back is the point of the Playground tab.
+ */
+export interface PlaygroundTranscribeResult {
+  text: string;
+  raw: unknown;
+  ok: boolean;
+  status: number;
+  statusText: string;
+  endpoint: string;
+  elapsedMs: number;
+}

@@ -36,7 +36,9 @@ src/main/
 src/preload/                — contextBridge exposures for overlay and settings
 src/renderer/
   overlay/                  — animated mic icon shown while recording
-  settings/                 — settings UI
+  settings/                 — settings UI, incl. the Playground tab (playground.ts)
+  shared/                   — browser-only helpers shared by overlay + settings
+                              (audio.ts: WAV re-encode, recorder mime-type pick)
 src/shared/
   types.ts                  — Settings, DictationState, DEFAULT_SETTINGS
   ipc-channels.ts           — typed IPC channel names
@@ -73,6 +75,23 @@ Chat Completions only accepts `wav`/`mp3` in `input_audio` (both OpenAI and Gemi
 for these profiles the overlay renderer re-encodes its WebM/Opus take as 16 kHz mono WAV
 via Web Audio before handing it to main — see `requiresWavAudio()` and the `RecordOptions`
 passed with `dictation:start`. The Whisper-style types keep shipping WebM untouched.
+
+## Playground tab
+
+A Settings tab for testing a profile's request/response directly, without going through
+the global-shortcut dictation flow. Source: `src/renderer/settings/playground.ts`.
+
+- **Audio source** — record in-app (MediaRecorder, same mic-capture path as the overlay)
+  or drop/browse an existing audio file.
+- **Profile picker** — a plain `<select>` over the saved profile list (not the in-progress
+  edits on the Profiles tab — switch tabs and Save first to test unsaved changes).
+- **Send** — `Transcriber.transcribeInspect()` (`src/main/services/transcriber.ts`) runs
+  the request against the chosen profile and, unlike the production `transcribe()` path,
+  never throws for a non-2xx reply — `PlaygroundTranscribeResult` carries `ok`/`status`/
+  `raw` either way, since inspecting exactly what the server sent back is the point.
+- **Raw JSON** — the response body, pretty-printed in a dialog, with a Copy button.
+- IPC: `playground:transcribe` (`IPC.Playground.Transcribe`), handled in `src/main/ipc.ts`
+  by looking up the chosen profile from `SettingsStore` and delegating to the transcriber.
 
 ## Key behaviours
 

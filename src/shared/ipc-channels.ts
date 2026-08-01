@@ -24,6 +24,9 @@ export const IPC = {
   Api: {
     ListModels: 'api:list-models'
   },
+  Playground: {
+    Transcribe: 'playground:transcribe'
+  },
   Permissions: {
     GetAll: 'permissions:get-all',
     Request: 'permissions:request',

@@ -22,5 +22,7 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   },
   getPermissions: () => ipcRenderer.invoke('permissions:get-all'),
   requestPermission: (id: string) => ipcRenderer.invoke('permissions:request', id),
-  openPermissionSettings: (id: string) => ipcRenderer.invoke('permissions:open-settings', id)
+  openPermissionSettings: (id: string) => ipcRenderer.invoke('permissions:open-settings', id),
+  playgroundTranscribe: (audio: ArrayBuffer, mimeType: string, profileId: string) =>
+    ipcRenderer.invoke('playground:transcribe', audio, mimeType, profileId)
 });

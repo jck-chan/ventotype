@@ -76,7 +76,12 @@ For Gemini (chat type), use its OpenAI-compatible base URL:
 https://generativelanguage.googleapis.com/v1beta/openai
 ```
 
+### Playground
 
+The **Playground** tab lets you test a profile without leaving Settings: record in-app
+or drop in an audio file, pick which saved profile to send it to, and inspect the
+transcript alongside the raw JSON the server returned (handy for debugging a
+misbehaving endpoint).
 
 ## macOS permissions
 

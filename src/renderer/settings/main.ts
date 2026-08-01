@@ -1,4 +1,4 @@
-import { DictationError, Settings } from '@shared/types';
+import { DictationError, PlaygroundTranscribeResult, Settings } from '@shared/types';
 import { PermissionId, PermissionState } from '@shared/permissions';
 import {
   appSettingsPatch,
@@ -8,6 +8,7 @@ import {
 } from './app-settings';
 import { initLastError } from './last-error';
 import { initPermissions } from './permissions';
+import { initPlayground, loadPlaygroundProfiles } from './playground';
 import {
   bumpProfileDirtyVersion,
   flushProfileSave,
@@ -34,6 +35,11 @@ declare global {
       getPermissions: () => Promise<PermissionState[]>;
       requestPermission: (id: PermissionId) => Promise<PermissionState>;
       openPermissionSettings: (id: PermissionId) => Promise<void>;
+      playgroundTranscribe: (
+        audio: ArrayBuffer,
+        mimeType: string,
+        profileId: string
+      ) => Promise<PlaygroundTranscribeResult>;
     };
   }
 }
@@ -86,6 +92,7 @@ async function load(): Promise<void> {
     ]);
     loadProfiles(s);
     loadAppSettings(s, openAtLogin);
+    loadPlaygroundProfiles(s);
     markClean();
   } catch (err) {
     showStatus('Failed to load settings.', 'err');
@@ -97,13 +104,14 @@ async function save(): Promise<void> {
   saveBtn.disabled = true;
   try {
     await flushProfileSave();
-    await Promise.all([
+    const [saved] = await Promise.all([
       window.settingsAPI.set({
         ...profilesPatch(),
         ...appSettingsPatch()
       }),
       window.settingsAPI.setLoginItem(openAtLoginValue())
     ]);
+    loadPlaygroundProfiles(saved);
     markClean();
     showStatus('Saved.', 'ok');
   } catch (err) {
@@ -117,6 +125,7 @@ async function save(): Promise<void> {
 initTabs();
 initLastError();
 initPermissions();
+initPlayground();
 initAppSettings(markAppSettingsDirty);
 initProfiles(
   markProfileDirty,

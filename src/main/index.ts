@@ -45,7 +45,7 @@ app.whenReady().then(() => {
   menuBarTray = createMenuBarTray(() => settingsWindow.show());
 
   // Wire IPC.
-  registerIpcHandlers(store, controller);
+  registerIpcHandlers(store, controller, transcriber);
 
   // Wire controller events → overlay.
   controller.on('stateChanged', (state, message) => {

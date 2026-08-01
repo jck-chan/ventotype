@@ -4,6 +4,7 @@ import {
   DEFAULT_TRANSCRIPTION_PROMPT,
   ENDPOINT_DEFAULTS,
   EndpointType,
+  PlaygroundTranscribeResult,
   requiresWavAudio,
   Settings
 } from '@shared/types';
@@ -69,12 +70,50 @@ export class Transcriber {
     return text;
   }
 
+  /**
+   * Full-fidelity variant for the Playground tab: runs against any profile
+   * (not necessarily the active one), and never throws for a non-2xx reply —
+   * the raw body is returned either way so it can be inspected in the UI.
+   */
+  async transcribeInspect(
+    input: TranscribeInput,
+    profile: ConnectionProfile
+  ): Promise<PlaygroundTranscribeResult> {
+    if (!profile.baseURL) throw new Error('Missing base URL for this profile.');
+
+    const { response, elapsed, endpoint } = await this.post(profile, input.audio, input.mimeType);
+    const bodyText = await safeText(response);
+
+    let raw: unknown = bodyText;
+    try {
+      raw = bodyText ? JSON.parse(bodyText) : null;
+    } catch {
+      // Not JSON — surface the raw text as-is.
+    }
+
+    const text = response.ok
+      ? profile.type === 'openai-chat'
+        ? chatText(raw as TranscriptionPayload)
+        : ((raw as TranscriptionPayload)?.text ?? '').trim()
+      : '';
+
+    return {
+      text,
+      raw,
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      endpoint,
+      elapsedMs: elapsed
+    };
+  }
+
   /** Shared HTTP plumbing used by both warm-up and transcription. Logs the request. */
   private async post(
     profile: ConnectionProfile,
     audioData: Uint8Array | ArrayBuffer,
     mimeType: string
-  ): Promise<{ response: Response; elapsed: number }> {
+  ): Promise<{ response: Response; elapsed: number; endpoint: string }> {
     const base     = profile.baseURL.replace(/\/$/, '');
     const model    = profile.model || ENDPOINT_DEFAULTS[profile.type].model;
     const language = profile.language || undefined;
@@ -142,7 +181,7 @@ export class Transcriber {
       body
     });
 
-    return { response, elapsed: Date.now() - t0 };
+    return { response, elapsed: Date.now() - t0, endpoint };
   }
 }
 
