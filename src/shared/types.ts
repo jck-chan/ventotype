@@ -80,8 +80,8 @@ export const ENDPOINT_DEFAULTS: Record<EndpointType, { baseURL: string; model: s
 export const DEFAULT_TRANSCRIPTION_PROMPT =
 `Please accurately transcribe the audio and output only the transcript (can be empty). For unsure part(s), output the sound (eg. IPA, pinyin) in <xxx> format.
 
-Settings { punctuations: true, cleanup: true, correct-grammar: true }
-Languages: en, zh, yue, jp, and more
+Settings { punctuations: true, clean-up: true, correct-grammar: true }
+Languages: Eng, 粵, 普, 日, 한, Esp, ...
 User context: Hong Kong, CS, PolyU, Diving, Piano`;
 
 /**
