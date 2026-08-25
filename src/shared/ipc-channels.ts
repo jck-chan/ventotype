@@ -12,6 +12,7 @@ export const IPC = {
     StateChanged: 'dictation:state-changed',
     RecordError: 'dictation:record-error',
     GetLastError: 'dictation:get-last-error',
+    DismissLastError: 'dictation:dismiss-last-error',
     LastErrorChanged: 'dictation:last-error-changed'
   },
   Overlay: {

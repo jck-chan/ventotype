@@ -31,6 +31,7 @@ declare global {
       getLoginItem: () => Promise<boolean>;
       setLoginItem: (enable: boolean) => Promise<void>;
       getLastError: () => Promise<DictationError | null>;
+      dismissLastError: () => Promise<void>;
       onLastErrorChanged: (cb: (error: DictationError) => void) => void;
       getPermissions: () => Promise<PermissionState[]>;
       requestPermission: (id: PermissionId) => Promise<PermissionState>;

@@ -32,6 +32,11 @@ export class DictationController extends EventEmitter {
     return this.lastError;
   }
 
+  /** Dismissed from Settings: forget the failure so reopening the window stays clean. */
+  clearLastError(): void {
+    this.lastError = null;
+  }
+
   /** Toggle shortcut: idle → recording, recording → stop, everything else ignored. */
   toggle(): void {
     if (this.state === 'idle') {

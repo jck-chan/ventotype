@@ -39,10 +39,13 @@ export function showLastError(error: DictationError | null): void {
 }
 
 export function initLastError(): void {
-  // Dismiss is local-only: it clears the display, not the stored error, so the
-  // banner comes back if the user reopens Settings and it's still relevant.
+  // Dismiss forgets the error in the main process too, so reopening Settings
+  // doesn't resurrect a banner the user has already acknowledged.
   dismissBtn.addEventListener('click', () => {
-    banner.hidden = true;
+    showLastError(null);
+    window.settingsAPI
+      .dismissLastError()
+      .catch((err) => console.error('[last-error] dismiss failed', err));
   });
 
   window.settingsAPI

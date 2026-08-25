@@ -65,6 +65,7 @@ export function registerIpcHandlers(
 
   // Last dictation failure — the overlay only flashes it, Settings keeps it.
   ipcMain.handle(IPC.Dictation.GetLastError, () => controller.lastDictationError);
+  ipcMain.handle(IPC.Dictation.DismissLastError, () => controller.clearLastError());
 
   // OS permissions
   ipcMain.handle(IPC.Permissions.GetAll, () => checkPermissions());

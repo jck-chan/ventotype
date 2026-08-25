@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   getLoginItem: () => ipcRenderer.invoke('app:get-login-item'),
   setLoginItem: (enable: boolean) => ipcRenderer.invoke('app:set-login-item', enable),
   getLastError: () => ipcRenderer.invoke('dictation:get-last-error'),
+  dismissLastError: () => ipcRenderer.invoke('dictation:dismiss-last-error'),
   onLastErrorChanged: (cb: (error: unknown) => void) => {
     ipcRenderer.on('dictation:last-error-changed', (_e, error: unknown) => cb(error));
   },
