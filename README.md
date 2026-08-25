@@ -1,14 +1,12 @@
 # VentoType
 
-Background dictation app for macOS and Windows.  
-Supports OpenAI/OpenRouter-compatible transcription endpoints, plus multimodal chat models
-like Gemini that transcribe through `/chat/completions`.  
-Press the shortcut, speak, and your words appear wherever the cursor is.  
-It has moden UI and doesn't clutter your dock.
+Background dictation app for macOS and Windows; lives in your system tray/menu bar.
+Supports OpenAI-like transcribe/chat-completions endpoints and OpenRouter transcribe endpoints.
+Press the customizable shortcut to start dictation.
 
 ## How it works
 
-After configurations in settings:
+After configuration in settings:
 
 - Press the **dictation shortcut** to start/finish dictation.
 - Press the **cancel shortcut** to cancel dictation.
@@ -22,15 +20,11 @@ After configurations in settings:
 npm install
 ```
 
-
-
 ### 2a. Development
 
 ```bash
 npm run dev
 ```
-
-
 
 ### 2b. Production build
 
@@ -42,8 +36,6 @@ npm run dist:mac
 # Windows
 npm run dist:win
 ```
-
-
 
 ## Configure
 
@@ -61,20 +53,14 @@ Open Settings (by clicking the system tray icon), fill in:
 - **OpenAI (Transcribe)** — `/audio/transcriptions` (OpenAI, Groq, local Whisper servers)
 - **OpenRouter (Transcribe)** — same route, base64 JSON body
 - **OpenAI (Chat Completions)** — `/chat/completions`, for multimodal models
-  that transcribe well but have no transcription route
+that transcribe well but have no transcription route
 
-All three types have a **Prompt** field, but it means something different per type. For the
-chat type, the audio is sent as part of a normal chat message with an instruction to
-transcribe it — the field customises that instruction; leave it empty for the built-in one.
-For the two Whisper-style types, it's Whisper's own `prompt` parameter — a vocabulary/style
-hint (proper nouns, acronyms, jargon likely to appear), not an instruction — so leaving it
+All three types have a **Prompt** field, but it means something different per type. For the  
+chat type, the audio is sent as part of a normal chat message with an instruction to  
+transcribe it — the field customises that instruction; leave it empty for the built-in one.  
+For the two Whisper-style types, it's Whisper's own `prompt` parameter — a vocabulary/style  
+hint (proper nouns, acronyms, jargon likely to appear), not an instruction — so leaving it  
 empty sends nothing, with no built-in default.
-
-For Gemini (chat type), use its OpenAI-compatible base URL:
-
-```
-https://generativelanguage.googleapis.com/v1beta/openai
-```
 
 ### Playground
 
@@ -92,11 +78,3 @@ On first run, macOS will prompt for:
   (System Settings > Privacy & Security > Accessibility)
 
 If auto-paste doesn't work, check the Accessibility permission for VentoType (or your terminal/Electron process during development).
-
-## Tech stack
-
-- Electron 43 + TypeScript
-- electron-vite
-- OpenAI-compatible `/audio/transcriptions` or `/chat/completions` endpoint
-- OS-native paste simulation (osascript on macOS, PowerShell SendKeys on Windows)
-
