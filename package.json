@@ -1,6 +1,6 @@
 {
   "name": "ventotype",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Background dictation app powered by any OpenAI-compatible Whisper endpoint.",
   "main": "out/main/index.js",
   "author": "",
