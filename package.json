@@ -11,10 +11,10 @@
     "build:fn-hook": "node scripts/build-fn-hook.mjs",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "pack:mac": "electron-vite build && electron-builder --mac --dir",
-    "pack:win": "electron-vite build && electron-builder --win --dir",
-    "dist:mac": "electron-vite build && electron-builder --mac",
-    "dist:win": "electron-vite build && electron-builder --win"
+    "pack:mac": "npm run build && electron-builder --mac --dir",
+    "pack:win": "npm run build && electron-builder --win --dir",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
@@ -36,7 +36,10 @@
     "mac": {
       "category": "public.app-category.productivity",
       "extraResources": [
-        "resources/fn-hook"
+        {
+          "from": "resources/fn-hook",
+          "to": "fn-hook"
+        }
       ],
       "extendInfo": {
         "NSMicrophoneUsageDescription": "VentoType needs microphone access to record dictation.",
