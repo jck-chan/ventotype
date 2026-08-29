@@ -3,6 +3,7 @@ import { IPC } from '@shared/ipc-channels';
 import { log } from './services/logger';
 import { requestPendingPermissions } from './services/permissions';
 import { SettingsStore } from './services/settings-store';
+import { FnHook } from './services/fn-hook';
 import { ShortcutManager } from './services/shortcuts';
 import { Transcriber } from './services/transcriber';
 import { Typer } from './services/typer';
@@ -25,7 +26,19 @@ const store = new SettingsStore();
 const transcriber = new Transcriber(() => store.value);
 const typer = new Typer();
 const controller = new DictationController(transcriber, typer);
-const settingsWindow = new SettingsWindow();
+const fnHook = new FnHook();
+const shortcuts = new ShortcutManager(
+  {
+    onToggle: () => controller.toggle(),
+    onCancel: () => controller.cancel()
+  },
+  fnHook
+);
+const settingsWindow = new SettingsWindow(() => {
+  syncFnHook();
+  // Closing the window mid-capture would otherwise leave the shortcuts off.
+  if (!settingsWindow.isOpen()) shortcuts.setSuspended(false);
+});
 const overlayWindow = new OverlayWindow();
 let menuBarTray: Tray | null = null;
 
@@ -45,7 +58,7 @@ app.whenReady().then(() => {
   menuBarTray = createMenuBarTray(() => settingsWindow.show());
 
   // Wire IPC.
-  registerIpcHandlers(store, controller, transcriber);
+  registerIpcHandlers(store, controller, transcriber, shortcuts);
 
   // Wire controller events → overlay.
   controller.on('stateChanged', (state, message) => {
@@ -71,6 +84,13 @@ app.whenReady().then(() => {
   applyShortcuts();
   store.on('change', applyShortcuts);
 
+  // Pressing fn in a shortcut field is how it gets bound, so the Settings window
+  // hears the same events the ShortcutManager does.
+  fnHook.on('shortcut', (accelerator) => {
+    settingsWindow.send(IPC.Shortcuts.FnPressed, accelerator);
+  });
+  syncFnHook();
+
   // Prompt for anything never asked about before. Already-denied permissions are
   // left to the Settings window, which can explain them and link to System Settings.
   requestPendingPermissions().catch((err) => log.error('[permissions] startup check', err));
@@ -81,6 +101,7 @@ app.on('before-quit', () => {
 });
 
 app.on('will-quit', () => {
+  fnHook.stop();
   globalShortcut.unregisterAll();
   menuBarTray?.destroy();
   menuBarTray = null;
@@ -95,17 +116,19 @@ app.on('window-all-closed', () => {
 });
 
 // ── Shortcut wiring ──────────────────────────────────────────────────────────
-let shortcuts: ShortcutManager | null = null;
-
 function applyShortcuts(): void {
   const { toggleShortcut, cancelShortcut } = store.value;
-
-  if (!shortcuts) {
-    shortcuts = new ShortcutManager({
-      onToggle: () => controller.toggle(),
-      onCancel: () => controller.cancel()
-    });
-  }
-
   shortcuts.apply({ toggle: toggleShortcut, cancel: cancelShortcut });
+  syncFnHook();
+}
+
+/**
+ * The fn helper reads every keystroke through an event tap, so it only runs when
+ * something actually needs it: an fn binding to listen for, or the Settings
+ * window open and possibly about to capture one.
+ */
+function syncFnHook(): void {
+  const bound = shortcuts.fnAccelerators();
+  if (bound.length || settingsWindow.isOpen()) fnHook.start(bound);
+  else fnHook.stop();
 }

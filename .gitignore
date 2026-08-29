@@ -8,3 +8,5 @@ dist
 .local/
 .claude/
 tmp/
+# compiled by scripts/build-fn-hook.mjs
+resources/fn-hook

@@ -6,8 +6,9 @@
   "author": "",
   "license": "MIT",
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "dev": "npm run build:fn-hook && electron-vite dev",
+    "build": "npm run build:fn-hook && electron-vite build",
+    "build:fn-hook": "node scripts/build-fn-hook.mjs",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "pack:mac": "electron-vite build && electron-builder --mac --dir",
@@ -29,10 +30,14 @@
     "icon": "resources/icon.png",
     "files": [
       "out/**/*",
-      "resources/**/*"
+      "resources/**/*",
+      "!resources/fn-hook"
     ],
     "mac": {
       "category": "public.app-category.productivity",
+      "extraResources": [
+        "resources/fn-hook"
+      ],
       "extendInfo": {
         "NSMicrophoneUsageDescription": "VentoType needs microphone access to record dictation.",
         "LSUIElement": true

@@ -21,6 +21,11 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   onLastErrorChanged: (cb: (error: unknown) => void) => {
     ipcRenderer.on('dictation:last-error-changed', (_e, error: unknown) => cb(error));
   },
+  setCapturingShortcut: (capturing: boolean) =>
+    ipcRenderer.invoke('shortcuts:set-capturing', capturing),
+  onFnShortcut: (cb: (accelerator: string) => void) => {
+    ipcRenderer.on('shortcuts:fn-pressed', (_e, accelerator: string) => cb(accelerator));
+  },
   getPermissions: () => ipcRenderer.invoke('permissions:get-all'),
   requestPermission: (id: string) => ipcRenderer.invoke('permissions:request', id),
   openPermissionSettings: (id: string) => ipcRenderer.invoke('permissions:open-settings', id),

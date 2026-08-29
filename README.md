@@ -12,6 +12,15 @@ After configuration in settings:
 - Press the **cancel shortcut** to cancel dictation — while recording it throws the take away, and while transcribing it aborts the request, so a slow endpoint doesn't have to be waited out.
 - After transcribing, VentoType will copy the text result into the clipboard, paste it, and restore the original clipboard content.
 
+### Shortcuts
+
+Any Electron accelerator works (`F5`, `Control+H`, `Command+Shift+D`). On macOS the **fn (🌐)
+key** works too — alone, or with a letter, digit, space or modifier (`Fn`, `Fn+Space`, `Fn+H`,
+`Fn+Shift`), on the same Accessibility permission the app already needs.
+
+A bound fn shortcut is swallowed, so macOS doesn't also switch input source or type the key on
+the same press. fn keys you haven't bound are left alone.
+
 ## Set up
 
 ### 1. Install dependencies

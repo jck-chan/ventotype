@@ -5,6 +5,7 @@ import { PermissionId } from '@shared/permissions';
 import { SettingsStore } from './services/settings-store';
 import { DictationController } from './services/dictation-controller';
 import { Transcriber } from './services/transcriber';
+import { ShortcutManager } from './services/shortcuts';
 import {
   checkPermissions,
   openPermissionSettings,
@@ -35,7 +36,8 @@ async function listOpenRouterModels(baseURL: string, apiKey: string): Promise<st
 export function registerIpcHandlers(
   store: SettingsStore,
   controller: DictationController,
-  transcriber: Transcriber
+  transcriber: Transcriber,
+  shortcuts: ShortcutManager
 ): void {
   // Settings
   ipcMain.handle(IPC.Settings.Get, () => store.value);
@@ -46,6 +48,11 @@ export function registerIpcHandlers(
     IPC.Settings.SaveActiveProfile,
     (_e: IpcMainInvokeEvent, profile: ConnectionProfile, activeProfileId: string) =>
       store.updateActiveProfile(profile, activeProfileId)
+  );
+
+  // Settings is recording a shortcut: the keys belong to that field, not to dictation.
+  ipcMain.handle(IPC.Shortcuts.SetCapturing, (_e: IpcMainInvokeEvent, capturing: boolean) =>
+    shortcuts.setSuspended(capturing)
   );
 
   // Audio blob from overlay renderer after recording stops

@@ -33,6 +33,8 @@ declare global {
       getLastError: () => Promise<DictationError | null>;
       dismissLastError: () => Promise<void>;
       onLastErrorChanged: (cb: (error: DictationError) => void) => void;
+      setCapturingShortcut: (capturing: boolean) => Promise<void>;
+      onFnShortcut: (cb: (accelerator: string) => void) => void;
       getPermissions: () => Promise<PermissionState[]>;
       requestPermission: (id: PermissionId) => Promise<PermissionState>;
       openPermissionSettings: (id: PermissionId) => Promise<void>;

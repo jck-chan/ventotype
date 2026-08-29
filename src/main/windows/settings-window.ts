@@ -6,6 +6,9 @@ const SETTINGS_PRELOAD = join(__dirname, '../preload/settings.js');
 export class SettingsWindow {
   private win: BrowserWindow | null = null;
 
+  /** `onVisibilityChanged` fires when the window opens and when it closes. */
+  constructor(private readonly onVisibilityChanged: () => void) {}
+
   show(): void {
     if (this.win && !this.win.isDestroyed()) {
       this.win.setAlwaysOnTop(false);
@@ -45,6 +48,7 @@ export class SettingsWindow {
         // No visible windows → re-hide dock icon so the app returns to background.
         app.dock?.hide();
       }
+      this.onVisibilityChanged();
     });
 
     if (process.env['ELECTRON_RENDERER_URL']) {
@@ -54,6 +58,7 @@ export class SettingsWindow {
     }
 
     this.win = win;
+    this.onVisibilityChanged();
   }
 
   isOpen(): boolean {

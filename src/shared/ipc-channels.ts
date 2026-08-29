@@ -15,6 +15,10 @@ export const IPC = {
     DismissLastError: 'dictation:dismiss-last-error',
     LastErrorChanged: 'dictation:last-error-changed'
   },
+  Shortcuts: {
+    FnPressed: 'shortcuts:fn-pressed',
+    SetCapturing: 'shortcuts:set-capturing'
+  },
   Overlay: {
     ShowError: 'overlay:show-error'
   },

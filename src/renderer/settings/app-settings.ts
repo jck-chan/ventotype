@@ -64,12 +64,18 @@ function startCapture(input: HTMLInputElement): void {
   capturingField = input;
   input.classList.add('capturing');
   input.placeholder = 'Press shortcut…';
+  // The bound keys are held off in main, so they reach this field instead of
+  // starting a dictation.
+  window.settingsAPI.setCapturingShortcut(true);
 }
 
 function stopCapture(input: HTMLInputElement): void {
   input.classList.remove('capturing');
   input.placeholder = 'Click to record…';
-  if (capturingField === input) capturingField = null;
+  if (capturingField !== input) return;
+
+  capturingField = null;
+  window.settingsAPI.setCapturingShortcut(false);
 }
 
 export function initAppSettings(onDirty: () => void): void {
@@ -102,6 +108,15 @@ export function initAppSettings(onDirty: () => void): void {
         onDirty();
       }
     }
+  });
+
+  // fn never reaches the renderer as a key event — the main process hears it
+  // through the fn helper and forwards what it saw, ready-made.
+  window.settingsAPI.onFnShortcut((accelerator) => {
+    if (!capturingField) return;
+    capturingField.value = accelerator;
+    stopCapture(capturingField);
+    onDirty();
   });
 
   document.querySelectorAll<HTMLButtonElement>('.clear-btn').forEach((btn) => {
