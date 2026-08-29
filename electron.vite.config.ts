@@ -7,7 +7,9 @@ export default defineConfig({
       outDir: 'out/main',
       lib: { entry: resolve(__dirname, 'src/main/index.ts') },
       rollupOptions: {
-        external: ['electron']
+        // koffi loads its own native binary by path — bundling it would break
+        // that, so it stays a runtime require resolved from node_modules.
+        external: ['electron', 'koffi']
       }
     },
     resolve: {

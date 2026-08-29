@@ -31,14 +31,18 @@
     "files": [
       "out/**/*",
       "resources/**/*",
-      "!resources/fn-hook"
+      "!resources/fn-hook.dylib"
+    ],
+    "asarUnpack": [
+      "**/node_modules/koffi/**",
+      "**/node_modules/@koromix/**"
     ],
     "mac": {
       "category": "public.app-category.productivity",
       "extraResources": [
         {
-          "from": "resources/fn-hook",
-          "to": "fn-hook"
+          "from": "resources/fn-hook.dylib",
+          "to": "fn-hook.dylib"
         }
       ],
       "extendInfo": {
@@ -49,5 +53,8 @@
     "win": {
       "target": "nsis"
     }
+  },
+  "dependencies": {
+    "koffi": "^3.1.6"
   }
 }
