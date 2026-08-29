@@ -213,14 +213,31 @@ function isEmptyCompletionError(status: number, body: string): boolean {
 /** Pulls the assistant's reply out of a Chat Completions response. */
 function chatText(payload: TranscriptionPayload): string {
   const content = payload.choices?.[0]?.message?.content;
-  if (typeof content === 'string') return content.trim();
+  if (typeof content === 'string') return extractTranscript(content);
   if (Array.isArray(content)) {
-    return content
-      .map((part) => (typeof part === 'string' ? part : part?.text ?? ''))
-      .join('')
-      .trim();
+    return extractTranscript(
+      content.map((part) => (typeof part === 'string' ? part : part?.text ?? '')).join('')
+    );
   }
   return '';
+}
+
+/** Delimiter the built-in chat prompt asks the model to wrap the transcript in. */
+const TRANSCRIPT_TAG = '<|t|>';
+
+/**
+ * Chat models like to wrap the transcript in a preamble ("Sure, here's the
+ * transcript:") or a code fence, so the built-in prompt asks for it between two
+ * `<|t|>` tags and everything outside them is dropped. A reply with no tags —
+ * a custom prompt, or a model that ignored them — is the transcript as-is; one
+ * with only an opening tag (a truncated reply) keeps everything after it.
+ */
+function extractTranscript(text: string): string {
+  const open = text.indexOf(TRANSCRIPT_TAG);
+  if (open === -1) return text.trim();
+  const start = open + TRANSCRIPT_TAG.length;
+  const close = text.indexOf(TRANSCRIPT_TAG, start);
+  return (close === -1 ? text.slice(start) : text.slice(start, close)).trim();
 }
 
 /**

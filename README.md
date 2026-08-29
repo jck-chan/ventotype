@@ -62,6 +62,10 @@ For the two Whisper-style types, it's Whisper's own `prompt` parameter — a voc
 hint (proper nouns, acronyms, jargon likely to appear), not an instruction — so leaving it  
 empty sends nothing, with no built-in default.
 
+The built-in chat instruction asks the model to wrap the transcript in two `<|t|>` tags,  
+so anything the model says around it (a preamble, a code fence) is stripped before the  
+text is typed. A reply with no tags is used as-is, so custom prompts still work.
+
 ### Playground
 
 The **Playground** tab lets you test a profile without leaving Settings: record in-app

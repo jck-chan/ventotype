@@ -78,11 +78,18 @@ export const ENDPOINT_DEFAULTS: Record<EndpointType, { baseURL: string; model: s
 
 /** Used by `openai-chat` profiles that leave the prompt field empty. */
 export const DEFAULT_TRANSCRIPTION_PROMPT =
-`Please accurately transcribe the audio and output only the transcript (can be empty). For unsure part(s), output the sound (eg. IPA, pinyin) in <xxx> format.
+`## Task
+Please accurately transcribe the audio and output the transcript wrapped by two <|t|> tags (can be empty).
+For unsure part(s), wrap them with < and > tag.
+Please perform the task according to the following settings.
 
-Settings { punctuations: true, clean-up: true, correct-grammar: true }
-Languages: Eng, 粵, 普, 日, 한, Esp, ...
-User context: Hong Kong, CS, PolyU, Diving, Piano`;
+## Settings
+languages: Any
+punctuations: true
+clean-up: true
+correct-grammar: true
+user context: Hong Kong, CS, PolyU, Diving, Piano
+user dictionary: `;
 
 /**
  * Chat Completions carries audio as a base64 `input_audio` part, and both OpenAI and

@@ -92,7 +92,7 @@ function syncPromptGuidance(): void {
   const isChat = fields.endpointType.value === 'openai-chat';
   fields.prompt.placeholder = isChat ? DEFAULT_TRANSCRIPTION_PROMPT : '';
   promptHint.textContent = isChat
-    ? 'Sent with the audio on every request. Leave empty to use the built-in prompt.'
+    ? 'Sent with the audio on every request. Leave empty to use the built-in prompt. A reply wrapped in <|t|> tags is unwrapped before typing.'
     : 'Optional vocabulary hint for Whisper — proper nouns, acronyms, or jargon likely to appear. Leave empty to send none.';
 }
 

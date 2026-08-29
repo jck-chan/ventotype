@@ -65,6 +65,13 @@ turn, next to a text part telling the model to transcribe; the transcript comes 
 (`DEFAULT_TRANSCRIPTION_PROMPT` when empty), and since chat has no `language` parameter,
 the profile's language is appended to the prompt instead.
 
+Chat models tend to frame their answer ("Sure, here's the transcript:", a code fence), so the
+built-in prompt asks for the transcript between two `<|t|>` tags and `extractTranscript()` in
+`transcriber.ts` keeps only what's between them. Untagged replies (a custom prompt, or a model
+that ignored the tags) are used whole, so nothing breaks without them. It sits inside
+`chatText()`, so the dictation path and the Playground both show the parsed transcript — the
+Playground's Raw JSON still shows the untouched reply.
+
 The `openai-transcribe` and `openrouter-transcribe` types also send **Prompt**, but as Whisper's own `prompt`
 parameter — a vocabulary/style bias (proper nouns, acronyms, a continuation cue), not an
 instruction. Unlike the chat type, an empty field sends nothing; there's no
