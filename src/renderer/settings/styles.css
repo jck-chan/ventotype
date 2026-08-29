@@ -167,6 +167,14 @@ html, body {
 /* `.field`'s display would otherwise beat the hidden attribute. */
 .field[hidden] { display: none; }
 
+/* Label row for fields with a control of their own at the far right. */
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 label {
   font-size: 12.5px;
   font-weight: 500;
@@ -412,6 +420,9 @@ textarea:focus {
   justify-content: center;
   padding: 0;
 }
+
+/* Sized to sit on a label row rather than in a button bar. */
+.btn-secondary.icon-btn.small { width: 26px; height: 26px; }
 
 .btn-secondary.icon-btn.danger:hover { color: var(--red); }
 .btn-secondary.icon-btn.danger:disabled:hover { color: var(--text-muted); }

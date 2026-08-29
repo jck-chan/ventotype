@@ -66,6 +66,9 @@ The built-in chat instruction asks the model to wrap the transcript in two `<|t|
 so anything the model says around it (a preamble, a code fence) is stripped before the  
 text is typed. A reply with no tags is used as-is, so custom prompts still work.
 
+The copy icon at the top right of the field copies the prompt that would actually be  
+sent — your own text, or the built-in one when the field is empty.
+
 ### Playground
 
 The **Playground** tab lets you test a profile without leaving Settings: record in-app

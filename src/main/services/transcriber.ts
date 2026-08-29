@@ -228,16 +228,15 @@ const TRANSCRIPT_TAG = '<|t|>';
 /**
  * Chat models like to wrap the transcript in a preamble ("Sure, here's the
  * transcript:") or a code fence, so the built-in prompt asks for it between two
- * `<|t|>` tags and everything outside them is dropped. A reply with no tags —
- * a custom prompt, or a model that ignored them — is the transcript as-is; one
- * with only an opening tag (a truncated reply) keeps everything after it.
+ * `<|t|>` tags and everything outside them is dropped. Without both tags — a
+ * custom prompt, or a model that ignored them — the whole reply is the transcript.
  */
 function extractTranscript(text: string): string {
-  const open = text.indexOf(TRANSCRIPT_TAG);
-  if (open === -1) return text.trim();
-  const start = open + TRANSCRIPT_TAG.length;
-  const close = text.indexOf(TRANSCRIPT_TAG, start);
-  return (close === -1 ? text.slice(start) : text.slice(start, close)).trim();
+  const start = text.indexOf(TRANSCRIPT_TAG);
+  if (start === -1) return text.trim();
+  const inner = start + TRANSCRIPT_TAG.length;
+  const close = text.indexOf(TRANSCRIPT_TAG, inner);
+  return close === -1 ? text.trim() : text.slice(inner, close).trim();
 }
 
 /**

@@ -26,6 +26,9 @@ export function isProfileField(fieldId: string): fieldId is ProfileFieldId {
 }
 
 const promptHint = $('promptHint');
+const copyPromptBtn = $<HTMLButtonElement>('copyPrompt');
+const copyIcon = $('copy-icon');
+const copyDoneIcon = $('copy-done');
 const profilePicker = $('profilePicker');
 const profileTrigger = $<HTMLButtonElement>('profileTrigger');
 const profileTriggerLabel = $('profileTriggerLabel');
@@ -48,6 +51,7 @@ let activeId = '';
 let allModels: string[] = [];
 let activeIdx = -1;
 let profileSavePromise: Promise<void> = Promise.resolve();
+let copyResetTimer: number | undefined;
 let profileDirtyVersion = 0;
 
 const genId = (): string =>
@@ -94,6 +98,23 @@ function syncPromptGuidance(): void {
   promptHint.textContent = isChat
     ? 'Sent with the audio on every request. Leave empty to use the built-in prompt. A reply wrapped in <|t|> tags is unwrapped before typing.'
     : 'Optional vocabulary hint for Whisper — proper nouns, acronyms, or jargon likely to appear. Leave empty to send none.';
+  syncCopyButton();
+}
+
+/**
+ * What the endpoint would actually receive — the typed prompt, or the built-in
+ * one a chat profile falls back to when the field is left empty. Mirrors
+ * `transcriptionPrompt()` in `transcriber.ts`, minus the language sentence.
+ */
+function effectivePrompt(): string {
+  const typed = fields.prompt.value.trim();
+  if (typed) return typed;
+  return fields.endpointType.value === 'openai-chat' ? DEFAULT_TRANSCRIPTION_PROMPT : '';
+}
+
+/** A Whisper-style profile with an empty field sends nothing — so there's nothing to copy. */
+function syncCopyButton(): void {
+  copyPromptBtn.disabled = effectivePrompt() === '';
 }
 
 const GRIP_SVG =
@@ -453,6 +474,23 @@ export function initProfiles(
     hideDropdown();
     syncPromptGuidance();
   });
+
+  copyPromptBtn.addEventListener('click', () => {
+    navigator.clipboard
+      .writeText(effectivePrompt())
+      .then(() => {
+        copyIcon.classList.add('hidden');
+        copyDoneIcon.classList.remove('hidden');
+        window.clearTimeout(copyResetTimer);
+        copyResetTimer = window.setTimeout(() => {
+          copyIcon.classList.remove('hidden');
+          copyDoneIcon.classList.add('hidden');
+        }, 1200);
+      })
+      .catch(() => {});
+  });
+
+  fields.prompt.addEventListener('input', syncCopyButton);
 
   revealBtn.addEventListener('click', () => {
     const isHidden = fields.apiKey.type === 'password';

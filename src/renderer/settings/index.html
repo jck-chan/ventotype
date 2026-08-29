@@ -215,7 +215,24 @@
                    own vocabulary/style-bias prompt on the Whisper-style types
                    (no built-in default there) — text updated by syncPromptGuidance(). -->
               <div class="field" id="promptField">
-                <label for="prompt">Prompt <span class="label-hint">(optional)</span></label>
+                <div class="field-head">
+                  <label for="prompt">Prompt <span class="label-hint">(optional)</span></label>
+                  <button
+                    type="button"
+                    class="btn-secondary icon-btn small"
+                    id="copyPrompt"
+                    title="Copy the prompt sent with the audio"
+                    aria-label="Copy prompt"
+                  >
+                    <svg id="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                      <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <svg id="copy-done" width="14" height="14" viewBox="0 0 24 24" fill="none" class="hidden" aria-hidden="true">
+                      <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
                 <textarea id="prompt" rows="3" spellcheck="false"></textarea>
                 <p class="hint" id="promptHint"></p>
               </div>

@@ -67,10 +67,15 @@ the profile's language is appended to the prompt instead.
 
 Chat models tend to frame their answer ("Sure, here's the transcript:", a code fence), so the
 built-in prompt asks for the transcript between two `<|t|>` tags and `extractTranscript()` in
-`transcriber.ts` keeps only what's between them. Untagged replies (a custom prompt, or a model
-that ignored the tags) are used whole, so nothing breaks without them. It sits inside
+`transcriber.ts` keeps only what's between them. A reply without both tags (a custom prompt, or
+a model that ignored them) is used whole, so nothing breaks without them. It sits inside
 `chatText()`, so the dictation path and the Playground both show the parsed transcript — the
 Playground's Raw JSON still shows the untouched reply.
+
+The Prompt field carries a copy button on its label row (`copyPrompt` in `profiles.ts`),
+which copies `effectivePrompt()` — the typed text, or the built-in prompt a chat profile
+would fall back to. It's disabled on the Whisper-style types while the field is empty,
+since those send nothing at all then.
 
 The `openai-transcribe` and `openrouter-transcribe` types also send **Prompt**, but as Whisper's own `prompt`
 parameter — a vocabulary/style bias (proper nouns, acronyms, a continuation cue), not an
