@@ -4,47 +4,23 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
-// Extra margin (ms) kept after the paste is dispatched before we restore the
-// user's previous clipboard. The bulk of the settle happens inside sendPaste()
-// (see SETTLE_SECONDS); this just adds a little headroom on top.
-const RESTORE_MARGIN_MS = 80;
 // How long to wait for the OS to reflect our clipboard write before pasting.
 const CLIPBOARD_WRITE_TIMEOUT_MS = 500;
 
 /**
- * Types arbitrary unicode text at the current cursor location by briefly
- * using the clipboard and dispatching a paste shortcut via OS-native tools.
- * Preserves the user's existing clipboard contents.
+ * Types arbitrary unicode text at the current cursor location by putting it on
+ * the clipboard and dispatching a paste shortcut via OS-native tools. The
+ * transcript is left on the clipboard afterwards, so it can be pasted again.
  */
 export class Typer {
   async type(text: string): Promise<void> {
     if (!text) return;
 
-    const prevText = clipboard.readText();
-    const prevHtml = clipboard.readHTML();
-
     clipboard.writeText(text);
     // Wait until the OS actually reflects our write before pasting, so the
     // paste can never fire against stale clipboard contents.
     await waitForClipboardText(text, CLIPBOARD_WRITE_TIMEOUT_MS);
-
-    try {
-      // sendPaste() only resolves after the focused app has had a window to
-      // consume the clipboard (the settle delay lives inside the OS command),
-      // so the restore below can't race ahead of the paste.
-      await sendPaste();
-      await delay(RESTORE_MARGIN_MS);
-    } finally {
-      // Don't clobber the clipboard if the user copied something else while we
-      // were pasting — only restore when our injected text is still present.
-      if (clipboard.readText() === text) {
-        if (prevHtml) {
-          clipboard.write({ text: prevText, html: prevHtml });
-        } else {
-          clipboard.writeText(prevText);
-        }
-      }
-    }
+    await sendPaste();
   }
 }
 

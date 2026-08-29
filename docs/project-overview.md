@@ -21,7 +21,7 @@ src/main/
     dictation-controller.ts — state machine: idle → recording → transcribing → typing → idle
     shortcuts.ts            — global shortcut registration/unregistration
     transcriber.ts          — sends the audio to the active profile's endpoint
-    typer.ts                — types transcribed text into focused app
+    typer.ts                — pastes transcribed text into focused app
     settings-store.ts       — persists settings (electron-store)
     menu-bar-tray.ts        — tray icon + context menu (Settings / Quit)
   user-data/
