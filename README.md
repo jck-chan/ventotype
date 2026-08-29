@@ -10,7 +10,7 @@ After configuration in settings:
 
 - Press the **dictation shortcut** to start/finish dictation.
 - Press the **cancel shortcut** to cancel dictation — while recording it throws the take away, and while transcribing it aborts the request, so a slow endpoint doesn't have to be waited out.
-- After transcribing, VentoType types the text straight in at your cursor. Your clipboard is left alone.
+- After transcribing, VentoType types the text straight in at your cursor. Your clipboard is left alone (on Linux it pastes instead, and the transcript stays on the clipboard).
 
 ### Shortcuts
 
