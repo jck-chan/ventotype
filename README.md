@@ -9,7 +9,7 @@ Press the customizable shortcut to start dictation.
 After configuration in settings:
 
 - Press the **dictation shortcut** to start/finish dictation.
-- Press the **cancel shortcut** to cancel dictation.
+- Press the **cancel shortcut** to cancel dictation — while recording it throws the take away, and while transcribing it aborts the request, so a slow endpoint doesn't have to be waited out.
 - After transcribing, VentoType will copy the text result into the clipboard, paste it, and restore the original clipboard content.
 
 ## Set up

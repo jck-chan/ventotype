@@ -45,12 +45,13 @@ export class Transcriber {
       });
   }
 
-  async transcribe(input: TranscribeInput): Promise<string> {
+  /** `signal` aborts the request in flight — the cancel shortcut while transcribing. */
+  async transcribe(input: TranscribeInput, signal?: AbortSignal): Promise<string> {
     const profile = activeProfile(this.getSettings());
     if (!profile.baseURL) throw new Error('Missing base URL. Set it in Settings.');
     const { tag, name } = API_LABEL[profile.type];
 
-    const { response, elapsed } = await this.post(profile, input.audio, input.mimeType);
+    const { response, elapsed } = await this.post(profile, input.audio, input.mimeType, signal);
 
     if (!response.ok) {
       const body = await safeText(response);
@@ -112,7 +113,8 @@ export class Transcriber {
   private async post(
     profile: ConnectionProfile,
     audioData: Uint8Array | ArrayBuffer,
-    mimeType: string
+    mimeType: string,
+    signal?: AbortSignal
   ): Promise<{ response: Response; elapsed: number; endpoint: string }> {
     const base     = profile.baseURL.replace(/\/$/, '');
     const model    = profile.model || ENDPOINT_DEFAULTS[profile.type].model;
@@ -178,7 +180,8 @@ export class Transcriber {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers,
-      body
+      body,
+      signal
     });
 
     return { response, elapsed: Date.now() - t0, endpoint };

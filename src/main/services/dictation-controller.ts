@@ -15,6 +15,8 @@ type ControllerEvents = {
 export class DictationController extends EventEmitter {
   private state: DictationState = 'idle';
   private lastError: DictationError | null = null;
+  /** Live only while a transcription request is in flight, so cancel can abort it. */
+  private transcribeAbort: AbortController | null = null;
 
   constructor(
     private readonly transcriber: Transcriber,
@@ -49,31 +51,47 @@ export class DictationController extends EventEmitter {
   }
 
   /**
-   * Cancel shortcut: discard the current recording — no transcription, back to idle.
-   * (Contrast: toggle while recording finishes the take and runs Whisper.)
+   * Cancel shortcut: drop the take and go back to idle. While recording that
+   * means discarding the audio before it's ever sent; while transcribing it
+   * aborts the request in flight, so a slow endpoint doesn't have to be waited
+   * out. (Contrast: toggle while recording finishes the take and transcribes it.)
+   * Typing is left alone — by then the text is already going into the app.
    */
   cancel(): void {
-    if (this.state !== 'recording') return;
-    this.emit('requestCancelRecord');
-    this.setState('idle');
+    if (this.state === 'recording') {
+      this.emit('requestCancelRecord');
+      this.setState('idle');
+    } else if (this.state === 'transcribing') {
+      log.info('[dictation] transcription cancelled');
+      this.transcribeAbort?.abort();
+      this.setState('idle');
+    }
   }
 
   async handleAudio(audio: ArrayBuffer, mimeType: string): Promise<void> {
     if (this.state !== 'recording') return;
     this.setState('transcribing');
+    const abort = new AbortController();
+    this.transcribeAbort = abort;
     try {
-      const text = await this.transcriber.transcribe({ audio, mimeType });
+      const text = await this.transcriber.transcribe({ audio, mimeType }, abort.signal);
+      // A cancel that landed while the reply was on the wire: cancel() already
+      // put us back to idle, so don't type what came back.
+      if (abort.signal.aborted) return;
       if (!text) { this.setState('idle'); return; }
       this.setState('typing');
       await this.typer.type(text);
       this.setState('idle');
     } catch (err) {
+      if (abort.signal.aborted) return; // cancelled on purpose — not a failure to report
       const message = (err as Error).message || 'Dictation failed.';
       log.error('[dictation]', err);
       this.setState('error', message);
       setTimeout(() => {
         if (this.state === 'error') this.setState('idle');
       }, 2500);
+    } finally {
+      this.transcribeAbort = null;
     }
   }
 
