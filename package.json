@@ -31,7 +31,7 @@
     "files": [
       "out/**/*",
       "resources/**/*",
-      "!resources/fn-hook.dylib"
+      "!resources/*.dylib"
     ],
     "asarUnpack": [
       "**/node_modules/koffi/**",
@@ -43,6 +43,10 @@
         {
           "from": "resources/fn-hook.dylib",
           "to": "fn-hook.dylib"
+        },
+        {
+          "from": "resources/typer.dylib",
+          "to": "typer.dylib"
         }
       ],
       "extendInfo": {

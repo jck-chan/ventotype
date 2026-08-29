@@ -9,4 +9,4 @@ dist
 .claude/
 tmp/
 # compiled by scripts/build-fn-hook.mjs
-resources/fn-hook.dylib
+resources/*.dylib
