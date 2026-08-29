@@ -34,8 +34,6 @@ const profileTrigger = $<HTMLButtonElement>('profileTrigger');
 const profileTriggerLabel = $('profileTriggerLabel');
 const profileDropdown = $<HTMLUListElement>('profileDropdown');
 const addProfileBtn = $<HTMLButtonElement>('addProfile');
-const delProfileBtn = $<HTMLButtonElement>('deleteProfile');
-const renameBtn = $<HTMLButtonElement>('renameProfile');
 const renameDialog = $<HTMLDialogElement>('renameDialog');
 const renameInput = $<HTMLInputElement>('renameInput');
 const renameCancelBtn = $<HTMLButtonElement>('renameCancel');
@@ -52,6 +50,7 @@ let allModels: string[] = [];
 let activeIdx = -1;
 let profileSavePromise: Promise<void> = Promise.resolve();
 let copyResetTimer: number | undefined;
+let renameTargetId = '';
 let profileDirtyVersion = 0;
 
 const genId = (): string =>
@@ -121,10 +120,17 @@ const GRIP_SVG =
   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
   '<path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
-const CHECK_SVG =
-  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
-  '<path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" ' +
-  'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const PENCIL_SVG =
+  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+  '<path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" ' +
+  'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+const TRASH_SVG =
+  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+  '<path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+  '<path d="M8 6V4h8v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+  '<path d="M6 6l1 14h10l1-14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+  '<path d="M10 11v5M14 11v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 function renderProfileList(): void {
   profileDropdown.innerHTML = '';
@@ -146,16 +152,29 @@ function renderProfileList(): void {
     name.className = 'profile-option-name';
     name.textContent = p.name;
 
-    const check = document.createElement('span');
-    check.className = 'profile-check';
-    check.innerHTML = CHECK_SVG;
-
-    li.append(grip, name, check);
+    li.append(grip, name, rowAction(p, 'rename'), rowAction(p, 'delete'));
     profileDropdown.appendChild(li);
   }
 
   profileTriggerLabel.textContent = getActive()?.name ?? '';
-  delProfileBtn.disabled = profiles.length <= 1;
+}
+
+/**
+ * Rename/delete for one row. They live here rather than next to the picker so
+ * they act on the profile under the pointer, not on whichever one is active.
+ */
+function rowAction(p: ConnectionProfile, kind: 'rename' | 'delete'): HTMLButtonElement {
+  const rename = kind === 'rename';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = rename ? 'profile-action' : 'profile-action danger';
+  btn.title = rename ? 'Rename' : 'Delete';
+  // setAttribute, not innerHTML — profile names are free-form user input.
+  btn.setAttribute('aria-label', `${btn.title} ${p.name}`);
+  btn.innerHTML = rename ? PENCIL_SVG : TRASH_SVG;
+  if (!rename) btn.disabled = profiles.length <= 1;
+  btn.addEventListener('click', () => (rename ? openRenameDialog(p.id) : deleteProfile(p.id)));
+  return btn;
 }
 
 function openProfileDropdown(): void {
@@ -172,12 +191,30 @@ function isProfileDropdownOpen(): boolean {
   return profileDropdown.classList.contains('open');
 }
 
-function openRenameDialog(): void {
-  const p = getActive();
+function openRenameDialog(id: string): void {
+  const p = profiles.find((x) => x.id === id);
   if (!p) return;
+  renameTargetId = id;
+  closeProfileDropdown();
   renameInput.value = p.name;
   renameDialog.showModal();
   renameInput.select();
+}
+
+function deleteProfile(id: string): void {
+  const p = profiles.find((x) => x.id === id);
+  if (!p || profiles.length <= 1) return;
+  if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+
+  // Edits still sitting in the form belong to the active profile, and deleting
+  // any other row re-renders around it — fold them in before the list changes.
+  syncFormToActive();
+  profiles = profiles.filter((x) => x.id !== id);
+  const droppedActive = id === activeId;
+  if (droppedActive) activeId = profiles[0].id;
+  renderProfileList();
+  if (droppedActive) loadActiveToForm();
+  markProfileDirtyExternal();
 }
 
 /**
@@ -385,8 +422,9 @@ export function initProfiles(
 
   profileDropdown.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
-    // The handle is for dragging; a click that lands on it shouldn't switch profile.
-    if (target.closest('.profile-grip')) return;
+    // The handle is for dragging and the row buttons act on their own row; a
+    // click that lands on either shouldn't switch profile.
+    if (target.closest('.profile-grip') || target.closest('.profile-action')) return;
 
     const id = target.closest<HTMLLIElement>('.profile-option')?.dataset.id;
     if (!id) return;
@@ -431,21 +469,9 @@ export function initProfiles(
     renderProfileList();
     loadActiveToForm();
     markProfileDirtyExternal();
-    openRenameDialog();
+    openRenameDialog(profile.id);
   });
 
-  delProfileBtn.addEventListener('click', () => {
-    if (profiles.length <= 1) return;
-    const name = getActive()?.name ?? 'this profile';
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
-    profiles = profiles.filter((p) => p.id !== activeId);
-    activeId = profiles[0].id;
-    renderProfileList();
-    loadActiveToForm();
-    markProfileDirtyExternal();
-  });
-
-  renameBtn.addEventListener('click', openRenameDialog);
   renameCancelBtn.addEventListener('click', () => renameDialog.close());
 
   // <form method="dialog"> closes the dialog on submit and sets returnValue to
@@ -453,7 +479,7 @@ export function initProfiles(
   // so only an explicit Save is committed here.
   renameDialog.addEventListener('close', () => {
     if (renameDialog.returnValue !== 'save') return;
-    const p = getActive();
+    const p = profiles.find((x) => x.id === renameTargetId);
     if (!p) return;
     p.name = renameInput.value.trim() || 'Untitled';
     renderProfileList();

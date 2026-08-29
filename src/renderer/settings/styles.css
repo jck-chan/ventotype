@@ -535,7 +535,9 @@ select.select option { background: var(--bg); color: var(--text); }
   transition: background 80ms, color 80ms;
 }
 
-.profile-option:hover,
+/* Selection is carried by the accent tint alone, so hover has to stay neutral —
+   otherwise pointing at a row would make it look like the active one. */
+.profile-option:hover { background: var(--bg-hover); }
 .profile-option.active { background: var(--accent-dim); }
 
 .profile-option-name {
@@ -568,14 +570,35 @@ select.select option { background: var(--bg); color: var(--text); }
 
 .profile-grip:active { cursor: grabbing; }
 
-.profile-check {
+/* Per-row rename/delete. Quiet until the row is hovered (or holds focus), so a
+   list at rest reads as plain names. */
+.profile-action {
   flex: none;
-  width: 14px;
-  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 3px;
+  color: var(--text-muted);
+  cursor: pointer;
   opacity: 0;
+  transition: color 80ms, background 80ms, opacity 80ms;
 }
 
-.profile-option.active .profile-check { opacity: 1; }
+.profile-option:hover .profile-action,
+.profile-option:focus-within .profile-action { opacity: 1; }
+
+.profile-action:hover { color: var(--text); background: rgba(255,255,255,0.07); }
+.profile-action.danger:hover { color: var(--red); }
+
+/* The last profile can't be deleted — the button stays put, dimmed. */
+.profile-action:disabled { cursor: default; }
+.profile-option:hover .profile-action:disabled { opacity: 0.3; }
+.profile-action:disabled:hover { background: none; color: var(--text-muted); }
 
 /* The row being dragged: dimmed in place so the gap reads as its landing slot. */
 .profile-option.dragging {

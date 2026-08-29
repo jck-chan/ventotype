@@ -113,7 +113,7 @@ the global-shortcut dictation flow. Source: `src/renderer/settings/playground.ts
 - **State machine** — `DictationController` emits `stateChanged`, `requestRecord`, `requestStopRecord`, `requestCancelRecord`
 - **Cancel** — `cancelShortcut` discards the recording without transcribing
 - **Quit guard** — overlay has `closable: false`; must call `overlayWindow.destroy()` before `app.quit()`
-- **Profile picker** — a custom listbox, not a `<select>`, so each row can carry a drag handle. Dragging reorders the `profiles` array (the DOM leads during the drag, the array is resynced on `dragend`) and marks the form dirty, so the new order lands on Save — same as adding or deleting a profile
+- **Profile picker** — a custom listbox, not a `<select>`, so each row can carry a drag handle plus its own rename/delete buttons (`rowAction()` in `profiles.ts`), which act on the row you point at rather than the active profile. Dragging reorders the `profiles` array (the DOM leads during the drag, the array is resynced on `dragend`) and marks the form dirty, so the new order lands on Save — same as adding or deleting a profile. The active row is marked by its accent tint alone, so row hover uses a neutral background
 
 
 
