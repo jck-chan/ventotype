@@ -7,6 +7,7 @@ const fields = {
   toggleShortcut: $<HTMLInputElement>('toggleShortcut'),
   cancelShortcut: $<HTMLInputElement>('cancelShortcut'),
   warmUpOnRecord: $<HTMLInputElement>('warmUpOnRecord'),
+  copyToClipboard: $<HTMLInputElement>('copyToClipboard'),
   openAtLogin: $<HTMLInputElement>('openAtLogin')
 };
 
@@ -147,14 +148,19 @@ export function loadAppSettings(s: Settings, openAtLogin: boolean): void {
   fields.toggleShortcut.value = s.toggleShortcut ?? '';
   fields.cancelShortcut.value = s.cancelShortcut ?? '';
   fields.warmUpOnRecord.checked = s.warmUpOnRecord ?? true;
+  fields.copyToClipboard.checked = s.copyToClipboard ?? false;
   fields.openAtLogin.checked = openAtLogin;
 }
 
-export function appSettingsPatch(): Pick<Settings, 'toggleShortcut' | 'cancelShortcut' | 'warmUpOnRecord'> {
+export function appSettingsPatch(): Pick<
+  Settings,
+  'toggleShortcut' | 'cancelShortcut' | 'warmUpOnRecord' | 'copyToClipboard'
+> {
   return {
     toggleShortcut: fields.toggleShortcut.value.trim(),
     cancelShortcut: fields.cancelShortcut.value.trim(),
-    warmUpOnRecord: fields.warmUpOnRecord.checked
+    warmUpOnRecord: fields.warmUpOnRecord.checked,
+    copyToClipboard: fields.copyToClipboard.checked
   };
 }
 

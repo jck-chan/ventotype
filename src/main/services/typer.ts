@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import koffi from 'koffi';
+import { Settings } from '@shared/types';
 
 const execFileAsync = promisify(execFile);
 
@@ -10,23 +11,29 @@ const execFileAsync = promisify(execFile);
  * Types transcribed text at the cursor.
  *
  * macOS and Windows both let a synthetic key event carry a unicode character
- * instead of a keycode, so the text goes straight in and the clipboard is never
- * touched. Linux has no equivalent that survives Wayland, so it keeps the
- * clipboard-and-paste route and the transcript is left on the clipboard there.
+ * instead of a keycode, so the text goes straight in and the clipboard is only
+ * involved if `copyToClipboard` asks for it. Linux has no equivalent that
+ * survives Wayland, so it keeps the clipboard-and-paste route — there the
+ * setting decides whether what was on the clipboard is put back afterwards.
  */
 export class Typer {
+  constructor(private readonly getSettings: () => Settings) {}
+
   async type(text: string): Promise<void> {
     if (!text) return;
+    const { copyToClipboard } = this.getSettings();
 
     switch (process.platform) {
       case 'darwin':
+        if (copyToClipboard) clipboard.writeText(text);
         typeMac(text);
         return;
       case 'win32':
+        if (copyToClipboard) clipboard.writeText(text);
         typeWindows(text);
         return;
       default:
-        await pasteViaClipboard(text);
+        await pasteViaClipboard(text, copyToClipboard);
     }
   }
 }
@@ -106,7 +113,8 @@ const CLIPBOARD_WRITE_TIMEOUT_MS = 500;
 // the focused app has read the clipboard before the command returns.
 const SETTLE_SECONDS = 0.12;
 
-async function pasteViaClipboard(text: string): Promise<void> {
+async function pasteViaClipboard(text: string, keepOnClipboard: boolean): Promise<void> {
+  const previous = keepOnClipboard ? null : clipboard.readText();
   clipboard.writeText(text);
   // Wait until the OS actually reflects our write before pasting, so the paste
   // can never fire against stale clipboard contents.
@@ -115,6 +123,9 @@ async function pasteViaClipboard(text: string): Promise<void> {
   try {
     await execFileAsync('xdotool', ['key', '--clearmodifiers', 'ctrl+v']);
     await delay(SETTLE_SECONDS * 1000);
+    // Only once the paste has landed, and only on success: if it failed, the
+    // transcript on the clipboard is the user's one remaining copy of it.
+    if (previous !== null) clipboard.writeText(previous);
   } catch (err) {
     throw new Error(
       `Auto-typing not supported on ${process.platform}: ${(err as Error).message}`

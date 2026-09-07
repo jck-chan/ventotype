@@ -24,6 +24,13 @@ export interface AppSettings {
   toggleShortcut: string;
   cancelShortcut: string;
   warmUpOnRecord: boolean;
+  /**
+   * Leave the transcript on the clipboard as well as typing it. Off by default,
+   * so dictating never costs the user whatever they had copied. Linux pastes to
+   * type at all, so there it decides whether the clipboard is put back
+   * afterwards rather than whether it's used.
+   */
+  copyToClipboard: boolean;
 }
 
 export interface ProfilesData {
@@ -50,6 +57,7 @@ const BASE_SETTINGS: Settings = {
   toggleShortcut: 'Control+H',
   cancelShortcut: 'Control+Shift+H',
   warmUpOnRecord: false,
+  copyToClipboard: false,
 };
 
 // Keyed by `process.platform` values. Pure data — no `process` access here so this

@@ -24,7 +24,7 @@ if (!isPrimary) {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 const store = new SettingsStore();
 const transcriber = new Transcriber(() => store.value);
-const typer = new Typer();
+const typer = new Typer(() => store.value);
 const controller = new DictationController(transcriber, typer);
 const fnHook = new FnHook();
 const shortcuts = new ShortcutManager(
