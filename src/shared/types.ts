@@ -12,12 +12,19 @@ export interface ConnectionProfile {
   language: string;
   /**
    * Sent alongside the audio on every request, but means something different per
-   * type: on `openai-chat` it's the instruction telling the model to transcribe
-   * (empty/absent falls back to `DEFAULT_TRANSCRIPTION_PROMPT`); on the
+   * type: on `openai-chat` it's the system message carrying the transcription
+   * rules (empty/absent falls back to `DEFAULT_TRANSCRIPTION_PROMPT`); on the
    * Whisper-style types it's Whisper's own `prompt` param — vocabulary/style
    * bias, not an instruction — so empty there just means "send nothing."
    */
   prompt?: string;
+  /**
+   * `openai-chat` only: the user turn that rides along with the audio. A system
+   * message is read as background rules and plenty of models won't act on a task
+   * stated only there, so the actual "do it now" cue belongs in a human message.
+   * Empty/absent falls back to `DEFAULT_CHAT_EXECUTION_MESSAGE`.
+   */
+  executionMessage?: string;
 }
 
 export interface AppSettings {
@@ -98,6 +105,13 @@ clean-up: true
 correct-grammar: true
 user context: Hong Kong, CS, PolyU, Diving, Piano
 user dictionary: `;
+
+/**
+ * Used by `openai-chat` profiles that leave the execution message empty. Deliberately
+ * bare — the rules live in the system prompt, so this only has to tell the model
+ * the turn is its cue to produce the result.
+ */
+export const DEFAULT_CHAT_EXECUTION_MESSAGE = 'Please output the result.';
 
 /**
  * Chat Completions carries audio as a base64 `input_audio` part, and both OpenAI and

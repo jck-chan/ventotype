@@ -215,6 +215,15 @@
                 <textarea id="prompt" rows="5" spellcheck="false"></textarea>
                 <p class="hint" id="promptHint"></p>
               </div>
+
+              <!-- openai-chat only (shown/hidden by syncPromptGuidance()): the user
+                   turn sent with the audio, since a system prompt alone reads as
+                   background rules to most models. -->
+              <div class="field" id="executionMessageField">
+                <label for="executionMessage">Execution message <span class="label-hint">(optional)</span></label>
+                <textarea id="executionMessage" rows="2" spellcheck="false"></textarea>
+                <p class="hint" id="executionMessageHint"></p>
+              </div>
             </div>
           </section>
         </div>

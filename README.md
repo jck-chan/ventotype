@@ -65,11 +65,15 @@ Open Settings (by clicking the system tray icon), fill in:
 that transcribe well but have no transcription route
 
 All three types have a **Prompt** field, but it means something different per type. For the  
-chat type, the audio is sent as part of a normal chat message with an instruction to  
-transcribe it — the field customises that instruction; leave it empty for the built-in one.  
-For the two Whisper-style types, it's Whisper's own `prompt` parameter — a vocabulary/style  
-hint (proper nouns, acronyms, jargon likely to appear), not an instruction — so leaving it  
-empty sends nothing, with no built-in default.
+chat type, it's the system message holding the transcription rules — leave it empty for the  
+built-in one. For the two Whisper-style types, it's Whisper's own `prompt` parameter — a  
+vocabulary/style hint (proper nouns, acronyms, jargon likely to appear), not an instruction —  
+so leaving it empty sends nothing, with no built-in default.
+
+The chat type has a second field, **Execution message**, sent with the audio as the user turn.  
+A system prompt is background rules to most models, and many won't act on a task stated  
+only there, so this is what actually asks for the transcript. It defaults to a deliberately  
+plain "Please output the result." when left empty.
 
 The built-in chat instruction asks the model to wrap the transcript in two `<|t|>` tags,  
 so anything the model says around it (a preamble, a code fence) is stripped before the  

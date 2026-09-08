@@ -1,5 +1,6 @@
 import {
   ConnectionProfile,
+  DEFAULT_CHAT_EXECUTION_MESSAGE,
   DEFAULT_PROFILE,
   DEFAULT_TRANSCRIPTION_PROMPT,
   EndpointType,
@@ -16,7 +17,8 @@ const fields = {
   apiKey: $<HTMLInputElement>('apiKey'),
   model: $<HTMLInputElement>('model'),
   language: $<HTMLInputElement>('language'),
-  prompt: $<HTMLTextAreaElement>('prompt')
+  prompt: $<HTMLTextAreaElement>('prompt'),
+  executionMessage: $<HTMLTextAreaElement>('executionMessage')
 };
 
 export type ProfileFieldId = keyof typeof fields;
@@ -26,6 +28,8 @@ export function isProfileField(fieldId: string): fieldId is ProfileFieldId {
 }
 
 const promptHint = $('promptHint');
+const executionMessageField = $('executionMessageField');
+const executionMessageHint = $('executionMessageHint');
 const copyPromptBtn = $<HTMLButtonElement>('copyPrompt');
 const copyIcon = $('copy-icon');
 const copyDoneIcon = $('copy-done');
@@ -69,6 +73,7 @@ function syncFormToActive(): void {
   p.model = fields.model.value.trim() || ENDPOINT_DEFAULTS[p.type].model;
   p.language = fields.language.value.trim();
   p.prompt = fields.prompt.value.trim();
+  p.executionMessage = fields.executionMessage.value.trim();
 }
 
 function loadActiveToForm(): void {
@@ -80,6 +85,7 @@ function loadActiveToForm(): void {
   fields.model.value = p.model;
   fields.language.value = p.language;
   fields.prompt.value = p.prompt ?? '';
+  fields.executionMessage.value = p.executionMessage ?? '';
   syncPromptGuidance();
   allModels = [];
   hideDropdown();
@@ -87,16 +93,21 @@ function loadActiveToForm(): void {
 
 /**
  * The prompt field is shared by every endpoint type but means something
- * different on each: an instruction to transcribe on chat-completions
- * profiles, or Whisper's own vocabulary/style-bias prompt on the Whisper-style
- * types (which has no built-in default, unlike the chat instruction).
+ * different on each: the system message holding the transcription rules on
+ * chat-completions profiles, or Whisper's own vocabulary/style-bias prompt on
+ * the Whisper-style types (which has no built-in default, unlike the chat one).
+ * The execution message goes with the audio, so it only applies to chat profiles.
  */
 function syncPromptGuidance(): void {
   const isChat = fields.endpointType.value === 'openai-chat';
   fields.prompt.placeholder = isChat ? DEFAULT_TRANSCRIPTION_PROMPT : '';
   promptHint.textContent = isChat
-    ? 'Sent with the audio on every request. Leave empty to use the built-in prompt. A reply wrapped in <|t|> tags is unwrapped before typing.'
+    ? 'Sent as the system message on every request. Leave empty to use the built-in prompt. A reply wrapped in <|t|> tags is unwrapped before typing.'
     : 'Optional vocabulary hint for Whisper — proper nouns, acronyms, or jargon likely to appear. Leave empty to send none.';
+  executionMessageField.classList.toggle('hidden', !isChat);
+  fields.executionMessage.placeholder = DEFAULT_CHAT_EXECUTION_MESSAGE;
+  executionMessageHint.textContent =
+    'The user turn sent with the audio — models act on this rather than on the system rules. Leave empty to use the built-in one.';
   syncCopyButton();
 }
 

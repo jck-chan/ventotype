@@ -59,11 +59,18 @@ means, differs.
 | `openai-chat` | `/chat/completions` | JSON, base64 `input_audio` content part | Multimodal chat models |
 
 `openai-chat` exists for models that transcribe well but ship no transcription route —
-Gemini being the motivating case. The audio goes in as one content part of a normal user
-turn, next to a text part telling the model to transcribe; the transcript comes back as
-`choices[0].message.content`. That instruction is the profile's **Prompt** field
-(`DEFAULT_TRANSCRIPTION_PROMPT` when empty), and since chat has no `language` parameter,
-the profile's language is appended to the prompt instead.
+Gemini being the motivating case. The request is two messages: a system message holding the
+transcription rules, then a user turn whose content parts are a short instruction and the
+base64 audio. The transcript comes back as `choices[0].message.content`. The rules are the
+profile's **Prompt** field (`DEFAULT_TRANSCRIPTION_PROMPT` when empty), and since chat has
+no `language` parameter, the profile's language is appended to them instead.
+
+The user turn is the profile's **Execution message** field (`DEFAULT_CHAT_EXECUTION_MESSAGE`, "Please
+output the result.", when empty). It exists because a system prompt reads as background
+rules to most models — plenty won't carry out a task stated only there — so the cue to
+produce the transcript now has to arrive in the human turn. See `transcriptionPrompt()` and
+`chatExecutionMessage()` in `transcriber.ts`. The field is hidden for the Whisper-style types,
+which have no chat turn to put it in.
 
 Chat models tend to frame their answer ("Sure, here's the transcript:", a code fence), so the
 built-in prompt asks for the transcript between two `<|t|>` tags and `extractTranscript()` in

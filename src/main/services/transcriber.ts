@@ -1,6 +1,7 @@
 import {
   activeProfile,
   ConnectionProfile,
+  DEFAULT_CHAT_EXECUTION_MESSAGE,
   DEFAULT_TRANSCRIPTION_PROMPT,
   ENDPOINT_DEFAULTS,
   EndpointType,
@@ -138,17 +139,19 @@ export class Transcriber {
     if (chat) {
       // Multimodal chat models (Gemini, GPT-4o-audio) have no /audio/transcriptions
       // route at all — the audio rides along as a content part of a normal chat turn
-      // and the transcript comes back as the assistant message. The instruction and
-      // the audio go in the same user message; a system role isn't universally
-      // supported across OpenAI-compatible chat servers.
+      // and the transcript comes back as the assistant message. The rules go in the
+      // system message and the audio travels with a short execution message: models treat
+      // a system prompt as background, so the cue to actually produce the transcript
+      // has to come from the human turn.
       headers['Content-Type'] = 'application/json';
       body = JSON.stringify({
         model,
         messages: [
+          { role: 'system', content: transcriptionPrompt(profile) },
           {
             role: 'user',
             content: [
-              { type: 'text', text: transcriptionPrompt(profile) },
+              { type: 'text', text: chatExecutionMessage(profile) },
               { type: 'input_audio', input_audio: { data: toBase64(audioData), format: ext } }
             ]
           }
@@ -252,6 +255,11 @@ function transcriptionPrompt(profile: ConnectionProfile): string {
   return language
     ? `${prompt}\n\nThe speech is in ${language}; transcribe it in that language.`
     : prompt;
+}
+
+/** The user turn sent with the audio on `openai-chat` profiles. */
+function chatExecutionMessage(profile: ConnectionProfile): string {
+  return profile.executionMessage?.trim() || DEFAULT_CHAT_EXECUTION_MESSAGE;
 }
 
 /**
