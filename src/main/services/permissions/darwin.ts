@@ -1,6 +1,7 @@
 import { shell, systemPreferences } from 'electron';
 import { PermissionStatus } from '@shared/permissions';
 import { PermissionAdapters } from './types';
+import { log } from '../logger';
 
 // Deep links into System Settings → Privacy & Security. The `Privacy_*` anchors
 // have been stable from Mojave through the current macOS.
@@ -16,7 +17,11 @@ function fromMediaAccessStatus(status: string): PermissionStatus {
       return status;
     default:
       // Electron also reports 'unknown'; treat it as denied so the UI offers a
-      // way forward rather than silently claiming everything is fine.
+      // way forward rather than silently claiming everything is fine. Worth a
+      // line in the log either way: 'unknown' means macOS could not place the
+      // app at all, which is a different problem from the user having said no,
+      // and the two are indistinguishable once both read as denied.
+      log.warn(`[permissions] unexpected media access status "${status}" — treating as denied`);
       return 'denied';
   }
 }
