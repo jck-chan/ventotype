@@ -70,7 +70,9 @@ const BASE_SETTINGS: Settings = {
 // Keyed by `process.platform` values. Pure data — no `process` access here so this
 // module stays safe to import from the renderer (no Node globals in the isolated world).
 const PLATFORM_OVERRIDES: Record<string, Partial<Settings>> = {
-  darwin: { toggleShortcut: 'F5', cancelShortcut: 'Shift+F5' }, // consistent with macOS convention of using fn+F5 for dictation
+  // fn+F5 is the macOS dictation convention. No cancel binding: Esc already
+  // cancels a take in flight, so spending a second shortcut on it buys nothing.
+  darwin: { toggleShortcut: 'F5', cancelShortcut: '' },
   win32: { toggleShortcut: 'F9', cancelShortcut: 'Shift+F9' },
   linux: { toggleShortcut: 'F9', cancelShortcut: 'Shift+F9' },
 };

@@ -39,6 +39,13 @@ const KEY_MAP: Record<string, string> = {
 
 let capturingField: HTMLInputElement | null = null;
 
+/**
+ * What each shortcut field says when it holds nothing, taken from the markup so
+ * the two do not have to agree: the toggle has to be set, while an empty cancel
+ * field still cancels on Esc and says so.
+ */
+const restingPlaceholders = new WeakMap<HTMLInputElement, string>();
+
 function capitalize(s: string): string {
   if (s.length === 1) return s.toUpperCase();
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -72,7 +79,7 @@ function startCapture(input: HTMLInputElement): void {
 
 function stopCapture(input: HTMLInputElement): void {
   input.classList.remove('capturing');
-  input.placeholder = 'Click to record…';
+  input.placeholder = restingPlaceholders.get(input) ?? '';
   if (capturingField !== input) return;
 
   capturingField = null;
@@ -82,6 +89,7 @@ function stopCapture(input: HTMLInputElement): void {
 export function initAppSettings(onDirty: () => void): void {
   for (const inputId of ['toggleShortcut', 'cancelShortcut'] as const) {
     const input = fields[inputId];
+    restingPlaceholders.set(input, input.placeholder);
 
     input.addEventListener('click', () => {
       if (capturingField === input) stopCapture(input);
