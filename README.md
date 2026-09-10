@@ -9,7 +9,7 @@ Press the customizable shortcut to start dictation.
 After configuration in settings:
 
 - Press the **dictation shortcut** to start/finish dictation.
-- Press the **cancel shortcut** to cancel dictation — while recording it throws the take away, and while transcribing it aborts the request, so a slow endpoint doesn't have to be waited out.
+- Press the **cancel shortcut** — or just **Esc** — to cancel dictation: while recording it throws the take away, and while transcribing it aborts the request, so a slow endpoint doesn't have to be waited out. Esc is only bound for as long as a take is in flight, so it stays available to everything else the rest of the time.
 - After transcribing, VentoType types the text straight in at your cursor. Your clipboard is left alone unless you turn on **Copy to clipboard** in Settings (on Linux it pastes instead, so the clipboard is used either way — the toggle decides whether the transcript is left there afterwards).
 
 ### Shortcuts

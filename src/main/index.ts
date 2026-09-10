@@ -64,6 +64,9 @@ app.whenReady().then(() => {
   controller.on('stateChanged', (state, message) => {
     overlayWindow.setState(state, message);
 
+    // Esc cancels for free, but only for as long as there's something to cancel.
+    shortcuts.setDictationActive(state === 'recording' || state === 'transcribing');
+
     if (state === 'recording') {
       overlayWindow.showAndFollow();
     } else if (state === 'idle') {

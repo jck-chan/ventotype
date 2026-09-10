@@ -17,11 +17,23 @@ export function isFnShortcut(accelerator: string): boolean {
   return /^Fn(\+|$)/.test(accelerator);
 }
 
+/**
+ * Cancelling with Esc is the convention everywhere, so it works without being
+ * bound. It can't be a normal binding though: a registered accelerator is
+ * swallowed before any app sees it, and taking Esc away from dialogs, vim and
+ * fullscreen video for the sake of a shortcut that does nothing outside a take
+ * is a bad trade. So it's held only while one is in flight — see
+ * `setDictationActive` — and handed straight back.
+ */
+const ESCAPE = 'Escape';
+
 export class ShortcutManager {
   private registered: string[] = [];
   private fnBindings = new Map<string, () => void>();
   private bindings: ShortcutBindings = { toggle: '', cancel: '' };
   private suspended = false;
+  private dictationActive = false;
+  private escapeHeld = false;
 
   constructor(
     private readonly handlers: ShortcutHandlers,
@@ -61,6 +73,18 @@ export class ShortcutManager {
     if (suspended === this.suspended) return;
     this.suspended = suspended;
     this.apply(this.bindings);
+    this.syncEscape();
+  }
+
+  /**
+   * Whether a take is in flight, i.e. whether cancelling means anything right
+   * now. Drives the temporary Esc binding; the states passed here should stay in
+   * step with the ones `DictationController.cancel()` acts on.
+   */
+  setDictationActive(active: boolean): void {
+    if (active === this.dictationActive) return;
+    this.dictationActive = active;
+    this.syncEscape();
   }
 
   unregisterAll(): void {
@@ -71,8 +95,36 @@ export class ShortcutManager {
     this.fnBindings.clear();
   }
 
+  /**
+   * Kept out of `registered` so `apply()` — which tears every binding down and
+   * rebuilds it — doesn't drop Esc out from under a take that's still running.
+   */
+  private syncEscape(): void {
+    // Not while Settings is recording a shortcut: the field needs Esc to back out.
+    const want = this.dictationActive && !this.suspended;
+    if (want === this.escapeHeld) return;
+
+    if (!want) {
+      globalShortcut.unregister(ESCAPE);
+      this.escapeHeld = false;
+      return;
+    }
+
+    try {
+      this.escapeHeld = globalShortcut.register(ESCAPE, this.handlers.onCancel);
+      if (!this.escapeHeld) log.warn('[shortcuts] failed to register Escape to cancel');
+    } catch (err) {
+      log.warn('[shortcuts] failed to register Escape to cancel:', err);
+      this.escapeHeld = false;
+    }
+  }
+
   private bind(accelerator: string, cb: () => void): void {
     if (!accelerator) return;
+    // Esc is handled by `syncEscape` — a saved binding for it (only reachable by
+    // hand-editing settings, since the recorder uses Esc to back out) would be
+    // torn down the first time a take ended.
+    if (accelerator === ESCAPE) return;
     if (isFnShortcut(accelerator)) this.fnBindings.set(accelerator, cb);
     else this.tryRegister(accelerator, cb);
   }
