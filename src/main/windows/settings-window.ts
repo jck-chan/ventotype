@@ -12,9 +12,8 @@ export class SettingsWindow {
   show(): void {
     if (this.win && !this.win.isDestroyed()) {
       this.win.setAlwaysOnTop(false);
-      this.win.show();
-      this.win.focus();
-      if (process.platform === 'darwin') app.dock?.show();
+      if (this.win.isMinimized()) this.win.restore();
+      this.present(this.win);
       return;
     }
 
@@ -37,10 +36,7 @@ export class SettingsWindow {
       }
     });
 
-    win.on('ready-to-show', () => {
-      win.show();
-      if (process.platform === 'darwin') app.dock?.show();
-    });
+    win.on('ready-to-show', () => this.present(win));
 
     win.on('closed', () => {
       this.win = null;
@@ -59,6 +55,22 @@ export class SettingsWindow {
 
     this.win = win;
     this.onVisibilityChanged();
+  }
+
+  /**
+   * Brings the window in front of whatever the user is looking at. Showing and
+   * focusing a window is not enough on macOS: an LSUIElement app is not the
+   * active application merely because one of its windows appeared, so Settings
+   * would open behind the frontmost app. `app.focus({ steal: true })` is what
+   * activates it, and the dock icon has to go up first — until the process is a
+   * regular one there is nothing for macOS to bring forward. Stealing focus is
+   * the intent here: the only way in is the user clicking the menu bar icon.
+   */
+  private present(win: BrowserWindow): void {
+    if (process.platform === 'darwin') app.dock?.show();
+    win.show();
+    win.focus();
+    if (process.platform === 'darwin') app.focus({ steal: true });
   }
 
   isOpen(): boolean {
