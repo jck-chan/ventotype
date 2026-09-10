@@ -17,6 +17,7 @@
     "dist:win": "npm run build && electron-builder --win"
   },
   "devDependencies": {
+    "@electron/osx-sign": "^1.0.5",
     "@types/node": "^20.11.0",
     "electron": "^43.2.0",
     "electron-builder": "^24.13.3",
@@ -52,7 +53,8 @@
       "extendInfo": {
         "NSMicrophoneUsageDescription": "VentoType needs microphone access to record dictation.",
         "LSUIElement": true
-      }
+      },
+      "sign": "./scripts/sign-adhoc.cjs"
     },
     "win": {
       "target": "nsis"
