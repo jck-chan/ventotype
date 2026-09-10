@@ -22,6 +22,10 @@ import Cocoa
 /// Taking it away is what stops the input source switching under a bound Fn.
 private let globeKeyCode: Int64 = 179
 
+/// `NX_SYSDEFINED`, the event media keys arrive as. `CGEventType` has no case
+/// for it, so it has to be spelled by raw value.
+private let systemDefinedType: UInt32 = 14
+
 private let lock = NSLock()
 private var pending: [String] = []
 private var bound: Set<String> = []
@@ -67,6 +71,16 @@ private func pressedModifier(_ flags: CGEventFlags) -> String? {
 
 private let onEvent: CGEventTapCallBack = { _, type, event, _ in
     let pass = Unmanaged.passUnretained(event)
+
+    // Volume, brightness and playback keys are system-defined events, not key
+    // presses, so `.keyDown` below never sees them. On a keyboard set to
+    // standard function keys they are exactly what fn+F11 produces — without
+    // this the following fn release still looked like a plain tap and fired a
+    // bound Fn.
+    if fnHeld, type.rawValue == systemDefinedType {
+        fnCombined = true
+        return pass
+    }
 
     if event.getIntegerValueField(.keyboardEventKeycode) == globeKeyCode {
         return bound.contains("Fn") ? nil : pass
@@ -133,6 +147,7 @@ public func fn_hook_start(_ swallow: UnsafePointer<CChar>?) -> Int32 {
     let mask = (1 << CGEventType.flagsChanged.rawValue)
         | (1 << CGEventType.keyDown.rawValue)
         | (1 << CGEventType.keyUp.rawValue)
+        | (1 << systemDefinedType)
 
     // An active tap at the HID level: active so a bound key can be swallowed,
     // and HID so we see the Globe key press before anything acts on it.
