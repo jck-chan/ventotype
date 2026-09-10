@@ -59,9 +59,12 @@ html, body {
 }
 
 .logo-name {
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  /* Old-style serif for the wordmark. macOS ships New York (ui-serif) and
+     Iowan Old Style; the rest are fallbacks for other platforms. */
+  font-family: ui-serif, 'New York', 'Iowan Old Style', Charter, Georgia, serif;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
   color: var(--text);
 }
 
