@@ -1,100 +1,50 @@
 # VentoType
 
-Background dictation app for macOS and Windows; lives in your system tray/menu bar.
-Supports OpenAI-like transcribe/chat-completions endpoints and OpenRouter transcribe endpoints.
-Press the customizable shortcut to start dictation.
+> Fast, open-source, system-wide dictation for macOS and Windows.
 
-## How it works
+VentoType turns your voice into text wherever you can type.
 
-After configuration in settings:
+Press your shortcut, speak naturally, and VentoType transcribes your speech and types the result directly at your cursor.
 
-- Press the **dictation shortcut** to start/finish dictation.
-- Press the **cancel shortcut** — or just **Esc** — to cancel dictation: while recording it throws the take away, and while transcribing it aborts the request, so a slow endpoint doesn't have to be waited out. Esc is only bound for as long as a take is in flight, so it stays available to everything else the rest of the time.
-- After transcribing, VentoType types the text straight in at your cursor. Your clipboard is left alone unless you turn on **Copy to clipboard** in Settings (on Linux it pastes instead, so the clipboard is used either way — the toggle decides whether the transcript is left there afterwards).
+No separate editor. No copy-paste. Just dictate and keep working.
 
-### Shortcuts
+## ✨ Features
 
-Any Electron accelerator works (`F5`, `Control+H`, `Command+Shift+D`). On macOS the **fn (🌐)
-key** works too — alone, or with a letter, digit, space or modifier (`Fn`, `Fn+Space`, `Fn+H`,
-`Fn+Shift`), on the same Accessibility permission the app already needs.
+- 🎙️ **System-wide dictation** — works wherever you can type
+- ⚡ **Customizable shortcuts** — including macOS `Fn` / `Globe`
+- 🖥️ **macOS & Windows**
+- 🔌 **Bring your own API** — use the transcription provider you prefer
+- 🤖 **Multiple API styles**
+  - OpenAI-compatible `/audio/transcriptions`
+  - OpenAI-compatible `/chat/completions`
+  - OpenRouter transcription
+- 🧩 **Multiple transcription profiles** — configure different endpoints, models, prompts, and languages
+- 🔀 **Reorderable profiles**
+- ⌨️ **Direct text input** — transcribed text is typed at your cursor
+- 📋 **Clipboard-friendly** — VentoType does not touch your clipboard unless you enable copying
+- ⛔ **Cancel anytime** — press `Esc` while recording or transcribing
+- 🧪 **Built-in Playground** — test providers, models, prompts, and audio without leaving VentoType
+- 🪶 **Lightweight background app** — lives in the menu bar / system tray
 
-A bound fn shortcut is swallowed, so macOS doesn't also switch input source or type the key on
-the same press. fn keys you haven't bound are left alone.
+## 🎯 Why VentoType?
 
-## Set up
+VentoType focuses on doing **dictation properly**.
 
-### 1. Install dependencies
+It is inspired by tools such as [Typeless](https://www.typeless.com/) and [OpenTypeless](https://github.com/RealKai42/open-typer), but takes a simpler, configurable approach.
 
-```bash
-npm install
-```
+Instead of trying to reproduce every feature of a full AI productivity suite, VentoType focuses on the core workflow:
 
-### 2a. Development
+**Shortcut → Speak → Transcribe → Text appears where you are typing**
 
-```bash
-npm run dev
-```
+You can bring your own transcription API and choose how your voice is processed.
 
-### 2b. Production build
+## 🔌 Supported providers
 
-```bash
-# macOS
-npm run dist:mac
-# you might need to run `xattr -dr com.apple.quarantine dist/mac-arm64/VentoType.app`
+VentoType supports several API formats rather than locking you to a single provider.
 
-# Windows
-npm run dist:win
-```
+### OpenAI-compatible Transcription
 
-## Configure
+Uses:
 
-Open Settings (by clicking the system tray icon), fill in:
-
-- **Endpoint type** — see below
-- **Base URL** (e.g. `https://api.openai.com/v1`)
-- **API key**
-- **Model**
-- **Language**
-- **Shortcuts**
-
-### Endpoint types
-
-- **OpenAI (Transcribe)** — `/audio/transcriptions` (OpenAI, Groq, local Whisper servers)
-- **OpenRouter (Transcribe)** — same route, base64 JSON body
-- **OpenAI (Chat Completions)** — `/chat/completions`, for multimodal models
-that transcribe well but have no transcription route
-
-All three types have a **Prompt** field, but it means something different per type. For the  
-chat type, it's the system message holding the transcription rules — leave it empty for the  
-built-in one. For the two Whisper-style types, it's Whisper's own `prompt` parameter — a  
-vocabulary/style hint (proper nouns, acronyms, jargon likely to appear), not an instruction —  
-so leaving it empty sends nothing, with no built-in default.
-
-The chat type has a second field, **Execution message**, sent with the audio as the user turn.  
-A system prompt is background rules to most models, and many won't act on a task stated  
-only there, so this is what actually asks for the transcript. It defaults to a deliberately  
-plain "Please output the result." when left empty.
-
-The built-in chat instruction asks the model to wrap the transcript in two `<|t|>` tags,  
-so anything the model says around it (a preamble, a code fence) is stripped before the  
-text is typed. A reply with no tags is used as-is, so custom prompts still work.
-
-The copy icon at the top right of the field copies the prompt that would actually be  
-sent — your own text, or the built-in one when the field is empty.
-
-### Playground
-
-The **Playground** tab lets you test a profile without leaving Settings: record in-app
-or drop in an audio file, pick which saved profile to send it to, and inspect the
-transcript alongside the raw JSON the server returned (handy for debugging a
-misbehaving endpoint).
-
-## macOS permissions
-
-On first run, macOS will prompt for:
-
-1. **Microphone**
-2. **Accessibility** - required for the auto-paste
-  (System Settings > Privacy & Security > Accessibility)
-
-If auto-paste doesn't work, check the Accessibility permission for VentoType (or your terminal/Electron process during development).
+```text
+/audio/transcriptions
