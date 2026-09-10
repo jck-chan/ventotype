@@ -216,11 +216,10 @@ VentoType is intentionally focused on its core dictation experience.
 
 Possible future improvements include:
 
-* More transcription providers
-* More platform-specific integrations
+* Ask AI with an optional screenshot -> AI type/answer
+* Text cleanup
+* Audio preprocessing
 * Improved onboarding
-* Further reliability improvements
-* Additional dictation workflows
 
 The project does **not** aim to become a full AI assistant.
 
