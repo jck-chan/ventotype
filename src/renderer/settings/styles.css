@@ -9,7 +9,8 @@
   --border:     rgba(255,255,255,0.07);
   --border-focus: rgba(124,58,237,0.6);
   --text:       #e8e8ec;
-  --text-muted: #6b6b7a;
+  --text-muted: #a7a7b5;
+  --text-subtle: #9696a4;
   --accent:     #7c3aed;
   --accent-dim: rgba(124,58,237,0.18);
   --red:        #ef4444;
@@ -186,7 +187,7 @@ label {
 
 .label-hint {
   font-weight: 400;
-  opacity: 0.6;
+  color: var(--text-subtle);
 }
 
 /* ── Inputs ──────────────────────────────────────────────────────────────── */
@@ -573,34 +574,28 @@ select.select option { background: var(--bg); color: var(--text); }
 
 .profile-grip:active { cursor: grabbing; }
 
-/* Per-row rename/delete. Quiet until the row is hovered (or holds focus), so a
-   list at rest reads as plain names. */
+/* Keep rename/delete visible so their availability is clear without hovering. */
 .profile-action {
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: none;
   background: none;
   border-radius: 3px;
   color: var(--text-muted);
   cursor: pointer;
-  opacity: 0;
-  transition: color 80ms, background 80ms, opacity 80ms;
+  transition: color 80ms, background 80ms;
 }
-
-.profile-option:hover .profile-action,
-.profile-option:focus-within .profile-action { opacity: 1; }
 
 .profile-action:hover { color: var(--text); background: rgba(255,255,255,0.07); }
 .profile-action.danger:hover { color: var(--red); }
 
 /* The last profile can't be deleted — the button stays put, dimmed. */
-.profile-action:disabled { cursor: default; }
-.profile-option:hover .profile-action:disabled { opacity: 0.3; }
+.profile-action:disabled { cursor: default; opacity: 0.4; }
 .profile-action:disabled:hover { background: none; color: var(--text-muted); }
 
 /* The row being dragged: dimmed in place so the gap reads as its landing slot. */
@@ -631,8 +626,7 @@ select.select option { background: var(--bg); color: var(--text); }
 
 .toggle-label small {
   font-size: 11px;
-  color: var(--text-muted);
-  opacity: 0.6;
+  color: var(--text-subtle);
   line-height: 1.4;
 }
 
@@ -838,8 +832,7 @@ dialog.rename-dialog::backdrop { background: rgba(0,0,0,0.5); }
 
 .playground-dropzone-or {
   font-size: 12px;
-  color: var(--text-muted);
-  opacity: 0.7;
+  color: var(--text-subtle);
 }
 
 .playground-record-btn {

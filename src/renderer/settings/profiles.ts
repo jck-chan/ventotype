@@ -132,12 +132,12 @@ const GRIP_SVG =
   '<path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 const PENCIL_SVG =
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
   '<path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" ' +
   'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 const TRASH_SVG =
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
   '<path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
   '<path d="M8 6V4h8v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
   '<path d="M6 6l1 14h10l1-14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
