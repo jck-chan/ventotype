@@ -55,7 +55,7 @@ means, differs.
 | Type | Endpoint | Request | Notes |
 | --- | --- | --- | --- |
 | `openai-transcribe` | `/audio/transcriptions` | multipart form-data | OpenAI, Groq, local Whisper servers |
-| `openrouter-transcribe` | `/audio/transcriptions` | JSON, base64 `input_audio` | OpenRouter rejects multipart |
+| `openrouter-transcribe` | `/audio/transcriptions` | JSON, base64 `input_audio` | OpenRouter also accepts multipart through `openai-transcribe` |
 | `openai-chat` | `/chat/completions` | JSON, base64 `input_audio` content part | Multimodal chat models |
 
 `openai-chat` exists for models that transcribe well but ship no transcription route —
@@ -142,4 +142,3 @@ npm run preview   # run built app
 
 - `resources/icon.png` — dock/app icon
 - `resources/icon-tray.png` — menu bar tray icon (~22×22 on macOS)
-

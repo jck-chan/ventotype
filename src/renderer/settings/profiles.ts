@@ -4,7 +4,7 @@ import {
   DEFAULT_PROFILE,
   DEFAULT_TRANSCRIPTION_PROMPT,
   EndpointType,
-  ENDPOINT_DEFAULTS,
+  DEFAULT_MODELS,
   Settings
 } from '@shared/types';
 
@@ -46,12 +46,23 @@ const eyeShow = $('eye-show');
 const eyeHide = $('eye-hide');
 const refreshModels = $<HTMLButtonElement>('refreshModels');
 const modelDropdown = $<HTMLUListElement>('model-dropdown');
+const baseURLDropdown = $<HTMLUListElement>('base-url-dropdown');
 const refreshIcon = $('refresh-icon');
+
+const OPENAI_BASE_URL = 'https://api.openai.com/v1';
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+
+const BASE_URL_PRESETS: Record<EndpointType, readonly string[]> = {
+  'openai-transcribe': [OPENAI_BASE_URL, OPENROUTER_BASE_URL],
+  'openrouter-transcribe': [OPENROUTER_BASE_URL],
+  'openai-chat': [OPENAI_BASE_URL, OPENROUTER_BASE_URL]
+};
 
 let profiles: ConnectionProfile[] = [];
 let activeId = '';
 let allModels: string[] = [];
 let activeIdx = -1;
+let activeURLIdx = -1;
 let profileSavePromise: Promise<void> = Promise.resolve();
 let copyResetTimer: number | undefined;
 let renameTargetId = '';
@@ -70,7 +81,7 @@ function syncFormToActive(): void {
   p.type = fields.endpointType.value as EndpointType;
   p.baseURL = fields.baseURL.value.trim();
   p.apiKey = fields.apiKey.value.trim();
-  p.model = fields.model.value.trim() || ENDPOINT_DEFAULTS[p.type].model;
+  p.model = fields.model.value.trim() || DEFAULT_MODELS[p.type];
   p.language = fields.language.value.trim();
   p.prompt = fields.prompt.value.trim();
   p.executionMessage = fields.executionMessage.value.trim();
@@ -89,6 +100,7 @@ function loadActiveToForm(): void {
   syncPromptGuidance();
   allModels = [];
   hideDropdown();
+  hideURLDropdown();
 }
 
 /**
@@ -340,6 +352,68 @@ function saveActiveProfileOnly(
   profileSavePromise = profileSavePromise.then(run, run);
 }
 
+function hideURLDropdown(): void {
+  baseURLDropdown.classList.remove('open');
+  fields.baseURL.setAttribute('aria-expanded', 'false');
+  fields.baseURL.removeAttribute('aria-activedescendant');
+  activeURLIdx = -1;
+}
+
+function selectURL(url: string): void {
+  if (fields.baseURL.value !== url) {
+    fields.baseURL.value = url;
+    allModels = [];
+    hideDropdown();
+    markProfileDirtyExternal();
+  }
+  hideURLDropdown();
+}
+
+function renderURLDropdown(): void {
+  const type = fields.endpointType.value as EndpointType;
+  const filter = fields.baseURL.value.trim().toLowerCase();
+  const matches = BASE_URL_PRESETS[type].filter((url) => url.toLowerCase().includes(filter));
+
+  baseURLDropdown.innerHTML = '';
+  activeURLIdx = -1;
+  fields.baseURL.removeAttribute('aria-activedescendant');
+
+  if (matches.length === 0) {
+    hideURLDropdown();
+    return;
+  }
+
+  matches.forEach((url, index) => {
+    const li = document.createElement('li');
+    li.id = `base-url-option-${index}`;
+    li.className = 'base-url-option';
+    li.setAttribute('role', 'option');
+    li.setAttribute('aria-selected', 'false');
+    li.textContent = url;
+    li.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      selectURL(url);
+    });
+    baseURLDropdown.appendChild(li);
+  });
+
+  baseURLDropdown.classList.add('open');
+  fields.baseURL.setAttribute('aria-expanded', 'true');
+}
+
+function moveActiveURL(delta: number): void {
+  const items = baseURLDropdown.querySelectorAll<HTMLLIElement>('.base-url-option');
+  if (!items.length) return;
+  activeURLIdx = Math.max(0, Math.min(activeURLIdx + delta, items.length - 1));
+  items.forEach((item, index) => {
+    const active = index === activeURLIdx;
+    item.classList.toggle('active', active);
+    item.setAttribute('aria-selected', String(active));
+  });
+  fields.baseURL.setAttribute('aria-activedescendant', items[activeURLIdx].id);
+  items[activeURLIdx].scrollIntoView({ block: 'nearest' });
+}
+
 function renderDropdown(filter: string): void {
   const f = filter.toLowerCase();
   const matches = allModels.filter((m) => m.toLowerCase().includes(f));
@@ -358,14 +432,20 @@ function renderDropdown(filter: string): void {
     li.textContent = id;
     li.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      fields.model.value = id;
-      hideDropdown();
-      markProfileDirtyExternal();
+      selectModel(id);
     });
     modelDropdown.appendChild(li);
   }
 
   modelDropdown.classList.add('open');
+}
+
+function selectModel(id: string): void {
+  if (fields.model.value !== id) {
+    fields.model.value = id;
+    markProfileDirtyExternal();
+  }
+  hideDropdown();
 }
 
 function hideDropdown(): void {
@@ -384,17 +464,20 @@ function moveActive(delta: number): void {
 async function fetchModels(): Promise<void> {
   const baseURL = fields.baseURL.value.trim();
   const apiKey = fields.apiKey.value.trim();
+  const type = fields.endpointType.value as EndpointType;
   if (!baseURL) return;
 
   refreshIcon.classList.add('spinning');
   refreshModels.disabled = true;
 
   try {
-    allModels = await window.settingsAPI.listModels(
-      baseURL,
-      apiKey,
-      fields.endpointType.value as EndpointType
-    );
+    const models = await window.settingsAPI.listModels(baseURL, apiKey, type);
+    if (
+      baseURL !== fields.baseURL.value.trim() ||
+      apiKey !== fields.apiKey.value.trim() ||
+      type !== fields.endpointType.value
+    ) return;
+    allModels = models;
     renderDropdown(fields.model.value);
   } catch {
     // User can still type a model name manually.
@@ -499,14 +582,11 @@ export function initProfiles(
 
   fields.endpointType.addEventListener('change', () => {
     const type = fields.endpointType.value as EndpointType;
-    const knownURLs = Object.values(ENDPOINT_DEFAULTS).map((d) => d.baseURL);
-    const knownModels = Object.values(ENDPOINT_DEFAULTS).map((d) => d.model);
-    if (!fields.baseURL.value.trim() || knownURLs.includes(fields.baseURL.value.trim())) {
-      fields.baseURL.value = ENDPOINT_DEFAULTS[type].baseURL;
-    }
+    const knownModels = Object.values(DEFAULT_MODELS);
     if (!fields.model.value.trim() || knownModels.includes(fields.model.value.trim())) {
-      fields.model.value = ENDPOINT_DEFAULTS[type].model;
+      fields.model.value = DEFAULT_MODELS[type];
     }
+    hideURLDropdown();
     allModels = [];
     hideDropdown();
     syncPromptGuidance();
@@ -536,6 +616,36 @@ export function initProfiles(
     eyeHide.classList.toggle('hidden', !isHidden);
   });
 
+  fields.baseURL.addEventListener('focus', renderURLDropdown);
+  fields.baseURL.addEventListener('input', () => {
+    allModels = [];
+    hideDropdown();
+    renderURLDropdown();
+  });
+  fields.baseURL.addEventListener('blur', hideURLDropdown);
+
+  fields.baseURL.addEventListener('keydown', (e) => {
+    if (!baseURLDropdown.classList.contains('open')) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      moveActiveURL(+1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      moveActiveURL(-1);
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      // Tab keeps its normal focus movement; it only completes text already typed.
+      if (!fields.baseURL.value.trim() && activeURLIdx < 0) return;
+      const items = baseURLDropdown.querySelectorAll<HTMLLIElement>('.base-url-option');
+      const selected = items[activeURLIdx >= 0 ? activeURLIdx : 0];
+      if (selected) {
+        if (e.key === 'Enter') e.preventDefault();
+        selectURL(selected.textContent ?? '');
+      }
+    } else if (e.key === 'Escape') {
+      hideURLDropdown();
+    }
+  });
+
   fields.model.addEventListener('focus', () => {
     if (allModels.length > 0) renderDropdown(fields.model.value);
     else fetchModels();
@@ -555,12 +665,15 @@ export function initProfiles(
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       moveActive(-1);
-    } else if (e.key === 'Enter' && activeIdx >= 0) {
-      e.preventDefault();
-      const item = modelDropdown.querySelectorAll<HTMLLIElement>('.model-option')[activeIdx];
-      if (item) {
-        fields.model.value = item.textContent ?? '';
-        hideDropdown();
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      if (e.key === 'Enter' && activeIdx < 0) return;
+      // Navigating past an empty field should not silently choose a model.
+      if (e.key === 'Tab' && !fields.model.value.trim() && activeIdx < 0) return;
+      const items = modelDropdown.querySelectorAll<HTMLLIElement>('.model-option');
+      const selected = items[activeIdx >= 0 ? activeIdx : 0];
+      if (selected) {
+        if (e.key === 'Enter') e.preventDefault();
+        selectModel(selected.textContent ?? '');
       }
     } else if (e.key === 'Escape') hideDropdown();
   });

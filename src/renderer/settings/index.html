@@ -124,13 +124,20 @@
               <div class="field-row">
                 <div class="field">
                   <label for="baseURL">Base URL</label>
-                  <input
-                    id="baseURL"
-                    type="url"
-                    placeholder="https://api.openai.com/v1"
-                    autocomplete="off"
-                    spellcheck="false"
-                  />
+                  <div class="base-url-input-wrap">
+                    <input
+                      id="baseURL"
+                      type="url"
+                      placeholder="https://..."
+                      autocomplete="off"
+                      spellcheck="false"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      aria-controls="base-url-dropdown"
+                      aria-expanded="false"
+                    />
+                    <ul class="base-url-dropdown" id="base-url-dropdown" role="listbox"></ul>
+                  </div>
                 </div>
                 <div class="field">
                   <label for="apiKey">API key</label>

@@ -52,7 +52,7 @@ export const DEFAULT_PROFILE: ConnectionProfile = {
   id: 'default',
   name: 'main',
   type: 'openai-transcribe',
-  baseURL: 'https://api.openai.com/v1',
+  baseURL: '',
   apiKey: '',
   model: 'whisper-1',
   language: ''
@@ -85,12 +85,12 @@ export function defaultSettingsFor(platform: string): Settings {
 /** Platform-agnostic defaults — safe to import in the renderer. */
 export const DEFAULT_SETTINGS: Settings = { ...BASE_SETTINGS };
 
-/** Sensible defaults to seed a freshly-created profile of each type. */
-export const ENDPOINT_DEFAULTS: Record<EndpointType, { baseURL: string; model: string }> = {
-  'openai-transcribe':     { baseURL: 'https://api.openai.com/v1', model: 'whisper-1' },
-  'openrouter-transcribe': { baseURL: 'https://openrouter.ai/api/v1', model: 'openai/whisper-large-v3' },
+/** Model fallbacks for profiles that leave the model field empty. */
+export const DEFAULT_MODELS: Record<EndpointType, string> = {
+  'openai-transcribe':     'whisper-1',
+  'openrouter-transcribe': 'openai/whisper-large-v3',
   // No default model — any multimodal chat model will do, so leave the pick to the user.
-  'openai-chat':           { baseURL: 'https://api.openai.com/v1', model: '' }
+  'openai-chat':           ''
 };
 
 /** Used by `openai-chat` profiles that leave the prompt field empty. */

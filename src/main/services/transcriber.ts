@@ -3,7 +3,7 @@ import {
   ConnectionProfile,
   DEFAULT_CHAT_EXECUTION_MESSAGE,
   DEFAULT_TRANSCRIPTION_PROMPT,
-  ENDPOINT_DEFAULTS,
+  DEFAULT_MODELS,
   EndpointType,
   PlaygroundTranscribeResult,
   requiresWavAudio,
@@ -118,7 +118,7 @@ export class Transcriber {
     signal?: AbortSignal
   ): Promise<{ response: Response; elapsed: number; endpoint: string }> {
     const base     = profile.baseURL.replace(/\/$/, '');
-    const model    = profile.model || ENDPOINT_DEFAULTS[profile.type].model;
+    const model    = profile.model || DEFAULT_MODELS[profile.type];
     const language = profile.language || undefined;
     const ext      = mimeToExtension(mimeType);
     const sizeKB   = (audioData.byteLength / 1024).toFixed(1);
