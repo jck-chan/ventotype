@@ -1,5 +1,5 @@
 /** How the transcription request is encoded for a given provider. */
-export type EndpointType = 'openai-transcribe' | 'openrouter-transcribe' | 'openai-chat';
+export type EndpointType = 'openai-transcribe' | 'openai-chat';
 
 /** A saved connection to a Whisper-compatible endpoint. */
 export interface ConnectionProfile {
@@ -14,7 +14,7 @@ export interface ConnectionProfile {
    * Sent alongside the audio on every request, but means something different per
    * type: on `openai-chat` it's the system message carrying the transcription
    * rules (empty/absent falls back to `DEFAULT_TRANSCRIPTION_PROMPT`); on the
-   * Whisper-style types it's Whisper's own `prompt` param — vocabulary/style
+   * `openai-transcribe` it's Whisper's own `prompt` param — vocabulary/style
    * bias, not an instruction — so empty there just means "send nothing."
    */
   prompt?: string;
@@ -88,7 +88,6 @@ export const DEFAULT_SETTINGS: Settings = { ...BASE_SETTINGS };
 /** Model fallbacks for profiles that leave the model field empty. */
 export const DEFAULT_MODELS: Record<EndpointType, string> = {
   'openai-transcribe':     'whisper-1',
-  'openrouter-transcribe': 'openai/whisper-large-v3',
   // No default model — any multimodal chat model will do, so leave the pick to the user.
   'openai-chat':           ''
 };

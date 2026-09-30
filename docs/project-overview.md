@@ -48,15 +48,17 @@ src/shared/
 
 ## Connection types
 
-A profile's `type` decides how the audio is sent. All three are configured the same way
-(base URL, API key, model, language, prompt) — only the request shape, and what "prompt"
-means, differs.
+A profile's `type` decides how the audio is sent; the base URL chooses the provider.
+Both types use the same connection fields (base URL, API key, model, language, prompt).
 
 | Type | Endpoint | Request | Notes |
 | --- | --- | --- | --- |
-| `openai-transcribe` | `/audio/transcriptions` | multipart form-data | OpenAI, Groq, local Whisper servers |
-| `openrouter-transcribe` | `/audio/transcriptions` | JSON, base64 `input_audio` | OpenRouter also accepts multipart through `openai-transcribe` |
+| `openai-transcribe` | `/audio/transcriptions` | multipart form-data | OpenAI, OpenRouter, OASR, and other compatible servers |
 | `openai-chat` | `/chat/completions` | JSON, base64 `input_audio` content part | Multimodal chat models |
+
+OpenRouter supports [OpenAI-compatible multipart transcription requests](https://openrouter.ai/docs/guides/overview/multimodal/stt), so it uses the shared `openai-transcribe` type. Migration 003 changes saved `openrouter-transcribe` profiles to that type while preserving each profile's URL, key, model, and other fields. Base URL presets never replace a typed value; the user selects a suggestion from the dropdown.
+
+Model refresh uses OpenRouter's `GET /models?output_modalities=transcription` for its base URL. OpenAI's `GET /models` has no capability filter, so the app keeps the documented file-transcription model family from that response. Other compatible servers keep their full model lists because their model IDs and capability metadata vary.
 
 `openai-chat` exists for models that transcribe well but ship no transcription route —
 Gemini being the motivating case. The request is two messages: a system message holding the
@@ -69,7 +71,7 @@ The user turn is the profile's **Execution message** field (`DEFAULT_CHAT_EXECUT
 output the result.", when empty). It exists because a system prompt reads as background
 rules to most models — plenty won't carry out a task stated only there — so the cue to
 produce the transcript now has to arrive in the human turn. See `transcriptionPrompt()` and
-`chatExecutionMessage()` in `transcriber.ts`. The field is hidden for the Whisper-style types,
+`chatExecutionMessage()` in `transcriber.ts`. The field is hidden for the transcription type,
 which have no chat turn to put it in.
 
 Chat models tend to frame their answer ("Sure, here's the transcript:", a code fence), so the
@@ -81,19 +83,19 @@ Playground's Raw JSON still shows the untouched reply.
 
 The Prompt field carries a copy button on its label row (`copyPrompt` in `profiles.ts`),
 which copies `effectivePrompt()` — the typed text, or the built-in prompt a chat profile
-would fall back to. It's disabled on the Whisper-style types while the field is empty,
+would fall back to. It's disabled on the transcription type while the field is empty,
 since those send nothing at all then.
 
-The `openai-transcribe` and `openrouter-transcribe` types also send **Prompt**, but as Whisper's own `prompt`
-parameter — a vocabulary/style bias (proper nouns, acronyms, a continuation cue), not an
-instruction. Unlike the chat type, an empty field sends nothing; there's no
-`DEFAULT_TRANSCRIPTION_PROMPT`-style fallback, since a keyword hint has no sensible default.
-See `whisperPrompt()` vs `transcriptionPrompt()` in `transcriber.ts`.
+The `openai-transcribe` type sends a nonempty **Prompt** as a transcription hint,
+often used for vocabulary or style rather than instructions. OpenRouter accepts
+this multipart field but currently ignores it. An empty field sends nothing;
+there's no `DEFAULT_TRANSCRIPTION_PROMPT`-style fallback. See `whisperPrompt()`
+vs `transcriptionPrompt()` in `transcriber.ts`.
 
 Chat Completions only accepts `wav`/`mp3` in `input_audio` (both OpenAI and Gemini), so
 for these profiles the overlay renderer re-encodes its WebM/Opus take as 16 kHz mono WAV
 via Web Audio before handing it to main — see `requiresWavAudio()` and the `RecordOptions`
-passed with `dictation:start`. The Whisper-style types keep shipping WebM untouched.
+passed with `dictation:start`. The transcription type keeps shipping WebM untouched.
 
 ## Playground tab
 

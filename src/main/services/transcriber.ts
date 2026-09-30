@@ -19,7 +19,6 @@ export interface TranscribeInput {
 /** Log tag and user-facing name per endpoint type — chat calls aren't Whisper calls. */
 const API_LABEL: Record<EndpointType, { tag: string; name: string }> = {
   'openai-transcribe':     { tag: 'whisper', name: 'Whisper API' },
-  'openrouter-transcribe': { tag: 'whisper', name: 'Whisper API' },
   'openai-chat':           { tag: 'chat',    name: 'Chat API' }
 };
 
@@ -123,13 +122,12 @@ export class Transcriber {
     const ext      = mimeToExtension(mimeType);
     const sizeKB   = (audioData.byteLength / 1024).toFixed(1);
     const chat     = profile.type === 'openai-chat';
-    const json     = profile.type === 'openrouter-transcribe';
     const endpoint = chat ? `${base}/chat/completions` : `${base}/audio/transcriptions`;
 
     log.info(
       `[${API_LABEL[profile.type].tag}] → ${endpoint}` +
       `  model: ${model}  |  lang: ${language || 'auto'}  |  fmt: ${ext}  |  size: ${sizeKB} KB` +
-      `  |  mode: ${chat ? 'chat' : json ? 'json' : 'multipart'}`
+      `  |  mode: ${chat ? 'chat' : 'multipart'}`
     );
 
     const headers: Record<string, string> = {};
@@ -157,19 +155,8 @@ export class Transcriber {
           }
         ]
       });
-    } else if (json) {
-      // OpenRouter rejects multipart uploads; it expects base64 audio in a JSON body.
-      // `prompt` here is Whisper's own param — vocabulary/style bias, not an
-      // instruction — so unlike the chat prompt it has no built-in default.
-      headers['Content-Type'] = 'application/json';
-      body = JSON.stringify({
-        model,
-        input_audio: { data: toBase64(audioData), format: ext },
-        ...(language ? { language } : {}),
-        ...(whisperPrompt(profile) ? { prompt: whisperPrompt(profile) } : {})
-      });
     } else {
-      // Other OpenAI-compatible servers (OpenAI, Groq, local) use multipart form-data.
+      // Transcription endpoints use OpenAI-compatible multipart form-data.
       const form = new FormData();
       form.append('file', new Blob([audioData as BlobPart], { type: mimeType }), `audio.${ext}`);
       form.append('model', model);

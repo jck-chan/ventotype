@@ -54,7 +54,6 @@ const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
 const BASE_URL_PRESETS: Record<EndpointType, readonly string[]> = {
   'openai-transcribe': [OPENAI_BASE_URL, OPENROUTER_BASE_URL],
-  'openrouter-transcribe': [OPENROUTER_BASE_URL],
   'openai-chat': [OPENAI_BASE_URL, OPENROUTER_BASE_URL]
 };
 
@@ -107,7 +106,7 @@ function loadActiveToForm(): void {
  * The prompt field is shared by every endpoint type but means something
  * different on each: the system message holding the transcription rules on
  * chat-completions profiles, or Whisper's own vocabulary/style-bias prompt on
- * the Whisper-style types (which has no built-in default, unlike the chat one).
+ * the transcription type (which has no built-in default, unlike the chat one).
  * The execution message goes with the audio, so it only applies to chat profiles.
  */
 function syncPromptGuidance(): void {

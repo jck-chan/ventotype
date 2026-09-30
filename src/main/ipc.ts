@@ -33,6 +33,29 @@ async function listOpenRouterModels(baseURL: string, apiKey: string): Promise<st
   return (data.data ?? []).map((m: { id: string }) => m.id).sort();
 }
 
+function isOpenRouterBaseURL(baseURL: string): boolean {
+  try {
+    return new URL(baseURL).hostname.toLowerCase() === 'openrouter.ai';
+  } catch {
+    return false;
+  }
+}
+
+function isOfficialOpenAIBaseURL(baseURL: string): boolean {
+  try {
+    const hostname = new URL(baseURL).hostname.toLowerCase();
+    return hostname === 'api.openai.com' || hostname.endsWith('.api.openai.com');
+  } catch {
+    return false;
+  }
+}
+
+function isOpenAITranscriptionModel(id: string): boolean {
+  return id === 'whisper-1' ||
+    id === 'gpt-transcribe' || id.startsWith('gpt-transcribe-') ||
+    /^gpt-4o-(?:mini-)?transcribe(?:-|$)/.test(id);
+}
+
 export function registerIpcHandlers(
   store: SettingsStore,
   controller: DictationController,
@@ -91,21 +114,20 @@ export function registerIpcHandlers(
     app.setLoginItemSettings({ openAtLogin: enable });
   });
 
-  // Fetch model list using provider-specific behavior. Keep providers separate
-  // here even when their APIs look similar, since their capabilities will diverge.
+  // OpenRouter filters the catalog server-side. OpenAI's /models response has
+  // only IDs, so filter its known file-transcription family on the client.
+  // Other compatible servers keep their full list: their IDs are not standardized.
   ipcMain.handle(
     IPC.Api.ListModels,
     async (_e: IpcMainInvokeEvent, baseURL: string, apiKey: string, type: EndpointType) => {
-      switch (type) {
-        case 'openai-transcribe':
-          return listOpenAiModels(baseURL, apiKey);
-        case 'openrouter-transcribe':
-          return listOpenRouterModels(baseURL, apiKey);
-        case 'openai-chat':
-          // Chat-completions providers expose the plain OpenAI /models shape, but
-          // nothing in it says which models accept audio — the list is unfiltered.
-          return listOpenAiModels(baseURL, apiKey);
+      if (type === 'openai-transcribe' && isOpenRouterBaseURL(baseURL)) {
+        return listOpenRouterModels(baseURL, apiKey);
       }
+      const models = await listOpenAiModels(baseURL, apiKey);
+      if (type === 'openai-transcribe' && isOfficialOpenAIBaseURL(baseURL)) {
+        return models.filter(isOpenAITranscriptionModel);
+      }
+      return models;
     }
   );
 

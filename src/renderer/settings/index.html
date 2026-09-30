@@ -115,9 +115,8 @@
               <div class="field">
                 <label for="endpointType">Endpoint type</label>
                 <select id="endpointType" class="select">
-                  <option value="openai-transcribe">OpenAI (Transcribe)</option>
-                  <option value="openai-chat">OpenAI (Chat Completions)</option>
-                  <option value="openrouter-transcribe">OpenRouter (Transcribe)</option>
+                  <option value="openai-transcribe">OpenAI Transcribe (OpenAI/ORouter/OASR)</option>
+                  <option value="openai-chat">OpenAI Chat Completions</option>
                 </select>
               </div>
 
@@ -198,7 +197,7 @@
 
               <!-- Meaning depends on endpoint type: an instruction on openai-chat
                    (placeholder shows DEFAULT_TRANSCRIPTION_PROMPT), or Whisper's
-                   own vocabulary/style-bias prompt on the Whisper-style types
+                   own vocabulary/style-bias prompt on the transcription type
                    (no built-in default there) — text updated by syncPromptGuidance(). -->
               <div class="field" id="promptField">
                 <div class="field-head">
