@@ -34,15 +34,9 @@ export interface PermissionState {
 }
 
 /** Display copy. Kept beside the ids so the UI can render any permission generically. */
-export const PERMISSION_META: Record<PermissionId, { label: string; why: string }> = {
-  microphone: {
-    label: 'Microphone',
-    why: 'Required to record your voice for dictation.'
-  },
-  accessibility: {
-    label: 'Accessibility',
-    why: 'Required to type transcribed text into the app you are using.'
-  }
+export const PERMISSION_META: Record<PermissionId, { label: string }> = {
+  microphone: { label: 'Microphone' },
+  accessibility: { label: 'Accessibility' }
 };
 
 /** Order used when checking and when rendering the list. */

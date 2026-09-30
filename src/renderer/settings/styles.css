@@ -147,12 +147,47 @@ html, body {
   gap: 14px;
 }
 
+.section[hidden] { display: none; }
+
 .section-title {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+/* The Settings tab groups related controls without adding helper copy to every row. */
+#general-panel { gap: 12px; }
+
+#general-panel > .section {
+  gap: 0;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+#general-panel .section-title {
+  margin-bottom: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+#general-panel .field-row { padding: 10px 0 2px; }
+
+#general-panel .toggle-row {
+  min-height: 36px;
+  padding: 4px 0;
+}
+
+#general-panel .toggle-row + .toggle-row {
+  border-top: 1px solid var(--border);
 }
 
 /* ── Fields ──────────────────────────────────────────────────────────────── */
@@ -613,20 +648,21 @@ select.select option { background: var(--bg); color: var(--text); }
 }
 
 .toggle-label {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.toggle-label span {
   font-size: 12.5px;
   font-weight: 500;
   color: var(--text-muted);
 }
 
-.toggle-label small {
-  font-size: 11px;
+.toggle-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.toggle-hint {
   color: var(--text-subtle);
+  font-size: 11px;
   line-height: 1.4;
 }
 

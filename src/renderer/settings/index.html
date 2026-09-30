@@ -282,10 +282,7 @@
             <h2 class="section-title">Behaviour</h2>
 
             <div class="toggle-row">
-              <div class="toggle-label">
-                <span>Open at login</span>
-                <small>Launch VentoType automatically when you log in</small>
-              </div>
+              <label class="toggle-label" for="openAtLogin">Open at login</label>
               <label class="toggle" title="Open at login">
                 <input type="checkbox" id="openAtLogin" />
                 <span class="toggle-track"></span>
@@ -293,10 +290,7 @@
             </div>
 
             <div class="toggle-row">
-              <div class="toggle-label">
-                <span>Copy to clipboard</span>
-                <small>Leave each transcript on the clipboard after it is typed</small>
-              </div>
+              <label class="toggle-label" for="copyToClipboard">Copy to clipboard</label>
               <label class="toggle" title="Copy to clipboard">
                 <input type="checkbox" id="copyToClipboard" />
                 <span class="toggle-track"></span>
@@ -304,29 +298,23 @@
             </div>
 
             <div class="toggle-row">
-              <div class="toggle-label">
-                <span>Warm up on record</span>
-                <small>Pings the server when recording starts so the model loads in the background</small>
+              <div class="toggle-copy">
+                <label class="toggle-label" for="warmUpOnRecord">Ping server on record</label>
+                <small class="toggle-hint">Sends a short silent audio clip for transcription to warm up the server.</small>
               </div>
-              <label class="toggle" title="Warm up on record">
+              <label class="toggle" title="Ping server on record">
                 <input type="checkbox" id="warmUpOnRecord" />
                 <span class="toggle-track"></span>
               </label>
             </div>
 
             <div class="toggle-row">
-              <div class="toggle-label">
-                <span>Application logs</span>
-                <small>Open the current log file for troubleshooting</small>
-              </div>
+              <span class="toggle-label">Application logs</span>
               <button class="btn-secondary" id="openLogFile">Open file</button>
             </div>
 
             <div class="toggle-row">
-              <div class="toggle-label">
-                <span>User data folder</span>
-                <small>Open the folder where VentoType stores settings and profiles</small>
-              </div>
+              <span class="toggle-label">User data folder</span>
               <button class="btn-secondary" id="openUserDataFolder">Open folder</button>
             </div>
           </section>

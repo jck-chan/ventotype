@@ -27,13 +27,9 @@ function buildRow(state: PermissionState): HTMLElement {
   const row = document.createElement('div');
   row.className = 'toggle-row';
 
-  const label = document.createElement('div');
+  const label = document.createElement('span');
   label.className = 'toggle-label';
-  const name = document.createElement('span');
-  name.textContent = meta.label;
-  const why = document.createElement('small');
-  why.textContent = meta.why;
-  label.append(name, why);
+  label.textContent = meta.label;
 
   const actions = document.createElement('div');
   actions.className = 'permission-actions';
