@@ -45,9 +45,10 @@ export class DictationController extends EventEmitter {
     if (this.state === 'idle') {
       this.setState('recording');
       this.transcriber.warmUp();
+      const settings = this.getSettings();
       this.emit('requestRecord', {
-        encodeWav: this.transcriber.needsWavAudio(),
-        useBuiltInMicOnly: this.getSettings().useBuiltInMicOnly
+        encodeWav: settings.audioFormat === 'wav',
+        useBuiltInMicOnly: settings.useBuiltInMicOnly
       });
     } else if (this.state === 'recording') {
       this.emit('requestStopRecord');

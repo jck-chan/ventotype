@@ -129,17 +129,6 @@ user dictionary: `;
  */
 export const DEFAULT_CHAT_EXECUTION_MESSAGE = 'Please output the result.';
 
-/**
- * Chat Completions carries audio as a base64 `input_audio` part, and both OpenAI and
- * Gemini reject anything other than wav/mp3 there ("Invalid audio format"). The
- * recorder's native WebM/Opus is fine for the /audio/transcriptions endpoints, so
- * only these profiles pay for the re-encode.
- */
-export function requiresWavAudio(type: EndpointType): boolean {
-  return type === 'openai-chat';
-}
-
-/** Sent to the overlay renderer when recording starts, so it ships audio the endpoint accepts. */
 export interface RecordOptions {
   encodeWav: boolean;
   useBuiltInMicOnly: boolean;

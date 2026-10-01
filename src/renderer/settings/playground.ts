@@ -1,5 +1,5 @@
-import { ConnectionProfile, PlaygroundTranscribeResult, requiresWavAudio, Settings } from '@shared/types';
-import { encodeAsWav, getSupportedRecordingMimeType, needsWavReencode } from '../shared/audio';
+import { ConnectionProfile, PlaygroundTranscribeResult, Settings } from '@shared/types';
+import { encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
 import { getMicrophoneStream } from '../shared/microphone';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -165,15 +165,8 @@ async function send(): Promise<void> {
   resultSection.hidden = true;
 
   try {
-    let blob = clipBlob;
-    let mimeType = clipMimeType;
-    if (requiresWavAudio(profile.type) && needsWavReencode(mimeType)) {
-      blob = await encodeAsWav(blob);
-      mimeType = 'audio/wav';
-    }
-
-    const buffer = await blob.arrayBuffer();
-    const result = await window.settingsAPI.playgroundTranscribe(buffer, mimeType, profile.id);
+    const buffer = await clipBlob.arrayBuffer();
+    const result = await window.settingsAPI.playgroundTranscribe(buffer, clipMimeType, profile.id);
     renderResult(result);
   } catch (err) {
     showError((err as Error).message || 'Request failed.');

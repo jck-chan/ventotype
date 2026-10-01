@@ -12,7 +12,7 @@ export const WAV_SAMPLE_RATE = 16000;
  * Re-encodes a browser-decodable audio blob as 16 kHz mono 16-bit PCM WAV.
  * MediaRecorder can't produce WAV directly, but Chromium can decode its own
  * WebM/Opus (and most other common formats), so the audio round-trips
- * through Web Audio for endpoints that only take wav/mp3.
+ * through Web Audio when WAV is selected.
  */
 export async function encodeAsWav(blob: Blob): Promise<Blob> {
   const decodeCtx = new AudioContext();
@@ -73,9 +73,4 @@ export function getSupportedRecordingMimeType(): string {
     if (MediaRecorder.isTypeSupported(mime)) return mime;
   }
   return '';
-}
-
-/** Chat-completions endpoints only accept wav/mp3 — anything else needs the WAV round-trip. */
-export function needsWavReencode(mimeType: string): boolean {
-  return !/wav|mpeg|mp3/i.test(mimeType);
 }

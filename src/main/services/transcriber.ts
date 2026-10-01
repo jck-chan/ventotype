@@ -6,7 +6,6 @@ import {
   DEFAULT_MODELS,
   EndpointType,
   PlaygroundTranscribeResult,
-  requiresWavAudio,
   Settings
 } from '@shared/types';
 import { log } from './logger';
@@ -24,12 +23,6 @@ const API_LABEL: Record<EndpointType, { tag: string; name: string }> = {
 
 export class Transcriber {
   constructor(private readonly getSettings: () => Settings) {}
-
-  /** Whether the selected format or active endpoint needs WAV. */
-  needsWavAudio(): boolean {
-    const settings = this.getSettings();
-    return settings.audioFormat === 'wav' || requiresWavAudio(activeProfile(settings).type);
-  }
 
   /** Fire-and-forget ping that triggers lazy model loading on the server. */
   warmUp(): void {
