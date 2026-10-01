@@ -190,6 +190,11 @@ html, body {
   border-top: 1px solid var(--border);
 }
 
+#general-panel .field + .toggle-row {
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+
 /* ── Fields ──────────────────────────────────────────────────────────────── */
 .field {
   display: flex;
