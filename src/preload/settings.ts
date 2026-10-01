@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   saveActiveProfile: (profile: unknown, activeProfileId: unknown) =>
     ipcRenderer.invoke('settings:save-active-profile', profile, activeProfileId),
   setDirty: (dirty: boolean) => ipcRenderer.send('settings:set-dirty', dirty),
+  importTextReplacements: () => ipcRenderer.invoke('text-replacements:import'),
+  exportTextReplacements: (replacements: unknown) =>
+    ipcRenderer.invoke('text-replacements:export', replacements),
   openLogFile: () => ipcRenderer.invoke('shell:open-log-file'),
   openUserDataFolder: () => ipcRenderer.invoke('shell:open-user-data-folder'),
   listModels: (baseURL: string, apiKey: string, type: string) =>

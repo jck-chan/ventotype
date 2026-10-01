@@ -11,6 +11,7 @@ import {
 import { readJsonFile, writeJsonAtomic } from '../user-data/json-io';
 import { userDataPaths } from '../user-data/paths';
 import { runUserDataMigrations } from '../user-data/runner';
+import { validateTextReplacements } from '@shared/text-replacements';
 
 const DEFAULTS: Settings = defaultSettingsFor(process.platform);
 
@@ -50,6 +51,7 @@ export class SettingsStore extends EventEmitter {
   }
 
   update(patch: Partial<Settings>): Settings {
+    if (patch.textReplacements !== undefined) validateTextReplacements(patch.textReplacements);
     const prev = this.current;
     const next: Settings = { ...prev, ...patch };
     this.save(next);
@@ -91,7 +93,8 @@ export class SettingsStore extends EventEmitter {
       cancelShortcut: settings.cancelShortcut,
       audioFormat: settings.audioFormat,
       warmUpOnRecord: settings.warmUpOnRecord,
-      copyToClipboard: settings.copyToClipboard
+      copyToClipboard: settings.copyToClipboard,
+      textReplacements: settings.textReplacements
     });
     this.fsyncDirectoryBestEffort(this.storeDir);
   }

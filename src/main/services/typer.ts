@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import koffi from 'koffi';
 import { Settings } from '@shared/types';
+import { applyTextReplacements } from '@shared/text-replacements';
 
 const execFileAsync = promisify(execFile);
 
@@ -21,7 +22,9 @@ export class Typer {
 
   async type(text: string): Promise<void> {
     if (!text) return;
-    const { copyToClipboard } = this.getSettings();
+    const { copyToClipboard, textReplacements } = this.getSettings();
+    text = applyTextReplacements(text, textReplacements);
+    if (!text) return;
 
     switch (process.platform) {
       case 'darwin':

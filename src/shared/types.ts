@@ -39,6 +39,12 @@ export interface AppSettings {
    * afterwards rather than whether it's used.
    */
   copyToClipboard: boolean;
+  textReplacements: TextReplacement[];
+}
+
+export interface TextReplacement {
+  from: string;
+  to: string;
 }
 
 export interface ProfilesData {
@@ -67,6 +73,7 @@ const BASE_SETTINGS: Settings = {
   audioFormat: 'webm',
   warmUpOnRecord: false,
   copyToClipboard: false,
+  textReplacements: [],
 };
 
 // Keyed by `process.platform` values. Pure data — no `process` access here so this

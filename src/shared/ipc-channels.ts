@@ -5,6 +5,10 @@ export const IPC = {
     SaveActiveProfile: 'settings:save-active-profile',
     SetDirty: 'settings:set-dirty'
   },
+  TextReplacements: {
+    Import: 'text-replacements:import',
+    Export: 'text-replacements:export'
+  },
   Dictation: {
     Start: 'dictation:start',
     Stop: 'dictation:stop',

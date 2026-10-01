@@ -333,6 +333,20 @@
               <button class="btn-secondary" id="openUserDataFolder">Open folder</button>
             </div>
           </section>
+
+          <section class="section">
+            <h2 class="section-title">Text replacements</h2>
+            <p class="hint">Replace whole phrases in dictated text before typing or copying. Matching ignores case; longer phrases take priority.</p>
+            <div id="textReplacementList" class="replacement-list"></div>
+            <div class="replacement-actions">
+              <button type="button" class="btn-secondary" id="addTextReplacement">+ Add rule</button>
+              <div class="replacement-file-actions">
+                <button type="button" class="btn-secondary" id="importTextReplacements">Import JSON</button>
+                <button type="button" class="btn-secondary" id="exportTextReplacements">Export JSON</button>
+              </div>
+            </div>
+            <p class="hint">Import replaces this list. Save changes to apply imported rules.</p>
+          </section>
         </div>
 
         <div
