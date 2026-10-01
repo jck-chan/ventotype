@@ -1,13 +1,21 @@
-import { BrowserWindow, app } from 'electron';
+import { BrowserWindow, app, dialog, ipcMain } from 'electron';
 import { join } from 'node:path';
+import { IPC } from '@shared/ipc-channels';
 
 const SETTINGS_PRELOAD = join(__dirname, '../preload/settings.js');
 
 export class SettingsWindow {
   private win: BrowserWindow | null = null;
+  private dirty = false;
+  private closeConfirmed = false;
 
   /** `onVisibilityChanged` fires when the window opens and when it closes. */
-  constructor(private readonly onVisibilityChanged: () => void) {}
+  constructor(private readonly onVisibilityChanged: () => void) {
+    ipcMain.on(IPC.Settings.SetDirty, (event, dirty: boolean) => {
+      if (event.sender !== this.win?.webContents) return;
+      this.dirty = dirty === true;
+    });
+  }
 
   show(): void {
     if (this.win && !this.win.isDestroyed()) {
@@ -17,6 +25,8 @@ export class SettingsWindow {
       return;
     }
 
+    this.dirty = false;
+    this.closeConfirmed = false;
     const win = new BrowserWindow({
       width: 560,
       height: 620,
@@ -38,8 +48,14 @@ export class SettingsWindow {
 
     win.on('ready-to-show', () => this.present(win));
 
+    win.on('close', (event) => {
+      if (!this.canClose()) event.preventDefault();
+    });
+
     win.on('closed', () => {
       this.win = null;
+      this.dirty = false;
+      this.closeConfirmed = false;
       if (process.platform === 'darwin') {
         // No visible windows → re-hide dock icon so the app returns to background.
         app.dock?.hide();
@@ -75,6 +91,24 @@ export class SettingsWindow {
 
   isOpen(): boolean {
     return !!this.win && !this.win.isDestroyed();
+  }
+
+  /** Also called before app quit, before the recording overlay is destroyed. */
+  canClose(): boolean {
+    if (!this.dirty || this.closeConfirmed || !this.win || this.win.isDestroyed()) return true;
+
+    const choice = dialog.showMessageBoxSync(this.win, {
+      type: 'warning',
+      title: 'Unsaved settings',
+      message: 'You have unsaved settings changes.',
+      detail: 'Close the window and discard these changes?',
+      buttons: ['Keep Editing', 'Discard Changes'],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true
+    });
+    this.closeConfirmed = choice === 1;
+    return this.closeConfirmed;
   }
 
   /** Pushes to the settings renderer. No-op when the window isn't open. */

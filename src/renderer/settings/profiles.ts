@@ -330,7 +330,7 @@ function commitOrderFromDom(): void {
 function saveActiveProfileOnly(
   profile: ConnectionProfile,
   activeProfileId: string,
-  onSaved: () => void,
+  onSaved: (saved: Settings) => void,
   onError: (message: string) => void
 ): void {
   const savedDirtyVersion = profileDirtyVersion;
@@ -338,8 +338,8 @@ function saveActiveProfileOnly(
 
   const run = async (): Promise<void> => {
     try {
-      await window.settingsAPI.saveActiveProfile(profile, activeProfileId);
-      if (profileDirtyVersion === savedDirtyVersion) onSaved();
+      const saved = await window.settingsAPI.saveActiveProfile(profile, activeProfileId);
+      if (profileDirtyVersion === savedDirtyVersion) onSaved(saved);
     } catch (err) {
       onError((err as Error).message ?? 'Failed to save profile.');
       console.error(err);
@@ -490,7 +490,7 @@ let markProfileDirtyExternal: () => void = () => {};
 
 export function initProfiles(
   onDirty: () => void,
-  onProfileSaved: () => void,
+  onProfileSaved: (saved: Settings) => void,
   onProfileSaveError: (message: string) => void
 ): void {
   markProfileDirtyExternal = () => {
@@ -510,6 +510,7 @@ export function initProfiles(
     activeId = id;
     renderProfileList();
     loadActiveToForm();
+    markProfileDirtyExternal();
     saveActiveProfileOnly(profileToSave, activeId, onProfileSaved, onProfileSaveError);
   };
 
@@ -714,4 +715,8 @@ export function markProfileClean(): void {
 
 export function bumpProfileDirtyVersion(): void {
   profileDirtyVersion += 1;
+}
+
+export function currentProfileDirtyVersion(): number {
+  return profileDirtyVersion;
 }

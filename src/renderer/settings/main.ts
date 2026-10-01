@@ -11,6 +11,7 @@ import { initPermissions } from './permissions';
 import { initPlayground, loadPlaygroundProfiles } from './playground';
 import {
   bumpProfileDirtyVersion,
+  currentProfileDirtyVersion,
   flushProfileSave,
   initProfiles,
   loadProfiles,
@@ -25,6 +26,7 @@ declare global {
       get: () => Promise<Settings>;
       set: (patch: Partial<Settings>) => Promise<Settings>;
       saveActiveProfile: (profile: unknown, activeProfileId: unknown) => Promise<Settings>;
+      setDirty: (dirty: boolean) => void;
       openLogFile: () => Promise<void>;
       openUserDataFolder: () => Promise<void>;
       listModels: (baseURL: string, apiKey: string, type: string) => Promise<string[]>;
@@ -52,11 +54,13 @@ const statusEl = document.getElementById('status') as HTMLSpanElement;
 
 let profileDirty = false;
 let appSettingsDirty = false;
+let appSettingsDirtyVersion = 0;
 
 function refreshDirtyState(): void {
   const isDirty = profileDirty || appSettingsDirty;
   document.title = isDirty ? 'VentoType *' : 'VentoType';
   saveBtn.textContent = isDirty ? 'Save changes *' : 'Save changes';
+  window.settingsAPI.setDirty(isDirty);
 }
 
 function markProfileDirty(): void {
@@ -66,6 +70,7 @@ function markProfileDirty(): void {
 
 function markAppSettingsDirty(): void {
   appSettingsDirty = true;
+  appSettingsDirtyVersion += 1;
   refreshDirtyState();
 }
 
@@ -104,9 +109,12 @@ async function load(): Promise<void> {
 }
 
 async function save(): Promise<void> {
+  if (saveBtn.disabled) return;
   saveBtn.disabled = true;
   try {
     await flushProfileSave();
+    const profileVersion = currentProfileDirtyVersion();
+    const appVersion = appSettingsDirtyVersion;
     const [saved] = await Promise.all([
       window.settingsAPI.set({
         ...profilesPatch(),
@@ -115,7 +123,12 @@ async function save(): Promise<void> {
       window.settingsAPI.setLoginItem(openAtLoginValue())
     ]);
     loadPlaygroundProfiles(saved);
-    markClean();
+    if (currentProfileDirtyVersion() === profileVersion) {
+      profileDirty = false;
+      markProfileClean();
+    }
+    if (appSettingsDirtyVersion === appVersion) appSettingsDirty = false;
+    refreshDirtyState();
     showStatus('Saved.', 'ok');
   } catch (err) {
     showStatus((err as Error).message ?? 'Failed to save.', 'err');
@@ -132,9 +145,11 @@ initPlayground();
 initAppSettings(markAppSettingsDirty);
 initProfiles(
   markProfileDirty,
-  () => {
-    profileDirty = false;
-    markProfileClean();
+  (saved) => {
+    const current = profilesPatch();
+    profileDirty = JSON.stringify(current.profiles) !== JSON.stringify(saved.profiles) ||
+      current.activeProfileId !== saved.activeProfileId;
+    if (!profileDirty) markProfileClean();
     refreshDirtyState();
   },
   (message) => {

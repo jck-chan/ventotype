@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   set: (patch: unknown) => ipcRenderer.invoke('settings:set', patch),
   saveActiveProfile: (profile: unknown, activeProfileId: unknown) =>
     ipcRenderer.invoke('settings:save-active-profile', profile, activeProfileId),
+  setDirty: (dirty: boolean) => ipcRenderer.send('settings:set-dirty', dirty),
   openLogFile: () => ipcRenderer.invoke('shell:open-log-file'),
   openUserDataFolder: () => ipcRenderer.invoke('shell:open-user-data-folder'),
   listModels: (baseURL: string, apiKey: string, type: string) =>

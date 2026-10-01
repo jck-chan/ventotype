@@ -99,7 +99,11 @@ app.whenReady().then(() => {
   requestPendingPermissions().catch((err) => log.error('[permissions] startup check', err));
 });
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
+  if (!settingsWindow.canClose()) {
+    event.preventDefault();
+    return;
+  }
   overlayWindow.destroy();
 });
 
