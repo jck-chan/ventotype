@@ -146,6 +146,12 @@ const PENCIL_SVG =
   '<path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" ' +
   'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+const DUPLICATE_SVG =
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+  '<rect x="8" y="8" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2"/>' +
+  '<path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
 const TRASH_SVG =
   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
   '<path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
@@ -173,7 +179,7 @@ function renderProfileList(): void {
     name.className = 'profile-option-name';
     name.textContent = p.name;
 
-    li.append(grip, name, rowAction(p, 'rename'), rowAction(p, 'delete'));
+    li.append(grip, name, rowAction(p, 'duplicate'), rowAction(p, 'rename'), rowAction(p, 'delete'));
     profileDropdown.appendChild(li);
   }
 
@@ -181,20 +187,23 @@ function renderProfileList(): void {
 }
 
 /**
- * Rename/delete for one row. They live here rather than next to the picker so
+ * Actions for one row. They live here rather than next to the picker so
  * they act on the profile under the pointer, not on whichever one is active.
  */
-function rowAction(p: ConnectionProfile, kind: 'rename' | 'delete'): HTMLButtonElement {
-  const rename = kind === 'rename';
+function rowAction(p: ConnectionProfile, kind: 'duplicate' | 'rename' | 'delete'): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = rename ? 'profile-action' : 'profile-action danger';
-  btn.title = rename ? 'Rename' : 'Delete';
+  btn.className = kind === 'delete' ? 'profile-action danger' : 'profile-action';
+  btn.title = kind === 'duplicate' ? 'Duplicate' : kind === 'rename' ? 'Rename' : 'Delete';
   // setAttribute, not innerHTML — profile names are free-form user input.
   btn.setAttribute('aria-label', `${btn.title} ${p.name}`);
-  btn.innerHTML = rename ? PENCIL_SVG : TRASH_SVG;
-  if (!rename) btn.disabled = profiles.length <= 1;
-  btn.addEventListener('click', () => (rename ? openRenameDialog(p.id) : deleteProfile(p.id)));
+  btn.innerHTML = kind === 'duplicate' ? DUPLICATE_SVG : kind === 'rename' ? PENCIL_SVG : TRASH_SVG;
+  if (kind === 'delete') btn.disabled = profiles.length <= 1;
+  btn.addEventListener('click', () => {
+    if (kind === 'duplicate') duplicateProfile(p.id);
+    else if (kind === 'rename') openRenameDialog(p.id);
+    else deleteProfile(p.id);
+  });
   return btn;
 }
 
@@ -220,6 +229,23 @@ function openRenameDialog(id: string): void {
   renameInput.value = p.name;
   renameDialog.showModal();
   renameInput.select();
+}
+
+function duplicateProfile(id: string): void {
+  syncFormToActive();
+  const index = profiles.findIndex((p) => p.id === id);
+  if (index < 0) return;
+
+  const original = profiles[index];
+  let number = 1;
+  while (profiles.some((p) => p.name === `${original.name} (${number})`)) number += 1;
+  const copy = { ...original, id: genId(), name: `${original.name} (${number})` };
+  profiles.splice(index + 1, 0, copy);
+  activeId = copy.id;
+  closeProfileDropdown();
+  renderProfileList();
+  loadActiveToForm();
+  markProfileDirtyExternal();
 }
 
 function deleteProfile(id: string): void {

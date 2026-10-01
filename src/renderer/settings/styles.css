@@ -609,7 +609,7 @@ select.select option { background: var(--bg); color: var(--text); }
 
 .profile-grip:active { cursor: grabbing; }
 
-/* Keep rename/delete visible so their availability is clear without hovering. */
+/* Keep profile actions visible so their availability is clear without hovering. */
 .profile-action {
   flex: none;
   display: flex;
