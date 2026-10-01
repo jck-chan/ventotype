@@ -4,7 +4,6 @@ import { IPC } from '@shared/ipc-channels';
 import { ConnectionProfile, EndpointType, Settings } from '@shared/types';
 import {
   parseTextReplacementsFile,
-  TEXT_REPLACEMENTS_FORMAT_VERSION,
   validateTextReplacements
 } from '@shared/text-replacements';
 import { PermissionId } from '@shared/permissions';
@@ -91,7 +90,7 @@ export function registerIpcHandlers(
       : await dialog.showOpenDialog(options);
     if (selection.canceled || !selection.filePaths[0]) return null;
     const path = selection.filePaths[0];
-    if ((await stat(path)).size > 1_000_000) throw new Error('JSON file is too large (1 MB maximum).');
+    if ((await stat(path)).size > 5_000_000) throw new Error('JSON file is too large (5 MB maximum).');
     let parsed: unknown;
     try {
       parsed = JSON.parse(await readFile(path, 'utf8'));
@@ -113,10 +112,7 @@ export function registerIpcHandlers(
       ? await dialog.showSaveDialog(parent, options)
       : await dialog.showSaveDialog(options);
     if (selection.canceled || !selection.filePath) return false;
-    await writeFile(selection.filePath, JSON.stringify({
-      version: TEXT_REPLACEMENTS_FORMAT_VERSION,
-      replacements
-    }, null, 2) + '\n', 'utf8');
+    await writeFile(selection.filePath, JSON.stringify(replacements, null, 2) + '\n', 'utf8');
     return true;
   });
 

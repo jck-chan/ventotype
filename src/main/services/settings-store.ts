@@ -51,9 +51,11 @@ export class SettingsStore extends EventEmitter {
   }
 
   update(patch: Partial<Settings>): Settings {
-    if (patch.textReplacements !== undefined) validateTextReplacements(patch.textReplacements);
+    const replacements = patch.textReplacements === undefined
+      ? this.current.textReplacements
+      : validateTextReplacements(patch.textReplacements);
     const prev = this.current;
-    const next: Settings = { ...prev, ...patch };
+    const next: Settings = { ...prev, ...patch, textReplacements: replacements };
     this.save(next);
     this.current = next;
     this.emit('change', next, prev);
@@ -79,7 +81,12 @@ export class SettingsStore extends EventEmitter {
   private load(): Settings {
     const appSettings = readJsonFile<Partial<AppSettings>>(this.settingsPath) ?? {};
     const profilesData = readJsonFile<Partial<ProfilesData>>(this.profilesPath) ?? {};
-    return { ...DEFAULTS, ...appSettings, ...profilesData };
+    return {
+      ...DEFAULTS,
+      ...appSettings,
+      ...profilesData,
+      textReplacements: validateTextReplacements(appSettings.textReplacements ?? [])
+    };
   }
 
   private save(settings: Settings): void {

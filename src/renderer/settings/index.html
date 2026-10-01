@@ -347,7 +347,11 @@
 
           <section class="section">
             <h2 class="section-title">Text replacements</h2>
-            <p class="hint">Replace whole phrases in dictated text before typing or copying. Matching ignores case; longer phrases take priority.</p>
+            <p class="hint">Replace whole phrases in dictated text before typing or copying. Matching ignores case; separate alternative phrases with commas.</p>
+            <div class="replacement-search-bar">
+              <input id="textReplacementSearch" type="search" placeholder="Search rules" aria-label="Search text replacements" />
+              <span id="textReplacementCount" class="hint"></span>
+            </div>
             <div id="textReplacementList" class="replacement-list"></div>
             <div class="replacement-actions">
               <button type="button" class="btn-secondary" id="addTextReplacement">+ Add rule</button>
@@ -357,6 +361,7 @@
               </div>
             </div>
             <p class="hint">Import replaces this list. Save changes to apply imported rules.</p>
+            <p class="hint">Compatible with Spokenly plain-rule JSON exports. Regex rules are not supported; timing metadata is preserved.</p>
           </section>
         </div>
 

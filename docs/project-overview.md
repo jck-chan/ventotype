@@ -120,6 +120,23 @@ the global-shortcut dictation flow. Source: `src/renderer/settings/playground.ts
 
 ## Key behaviours
 
+### Text replacements
+
+Settings → Text replacements stores rules in `settings.json`. Import and export
+use Spokenly's Word Replacements JSON array: `id`, `createdAt`, `isRegex`,
+`original`, `replacement`, and `timing`. Imported metadata is preserved on edit
+and export. `createdAt` uses seconds since 2001-01-01 for newly added rules.
+VentoType supports plain rules only; import rejects `isRegex: true` rather than
+silently changing its meaning. Timing metadata is preserved, but VentoType has
+no separate AI formatting stage, so all rules run after transcription.
+
+Matching ignores case, treats comma-separated source text as variants, and
+prefers longer phrases. Latin text respects word boundaries; Han characters
+can be replaced inside continuous Chinese text. The final transcript is
+processed once before typing or copying, so replacement output is not processed
+again. Import replaces the editor list and requires Save changes before it
+affects dictation. VentoType's earlier versioned JSON export remains importable.
+
 - **Single instance** — second launch focuses the settings window
 - **Dock hidden** — `app.dock?.hide()` on macOS; app lives entirely in tray
 - **Recording overlay window** — `alwaysOnTop: 'floating'`, `visibleOnAllWorkspaces: true` so the mic indicator follows the cursor across macOS Spaces; `setIgnoreMouseEvents(true)` so it never steals focus

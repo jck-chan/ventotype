@@ -44,8 +44,12 @@ export interface AppSettings {
 }
 
 export interface TextReplacement {
-  from: string;
-  to: string;
+  id: string;
+  createdAt: number;
+  isRegex: boolean;
+  original: string;
+  replacement: string;
+  timing: 'beforeAI' | 'afterAI' | 'both';
 }
 
 export interface ProfilesData {

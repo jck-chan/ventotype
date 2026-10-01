@@ -1028,6 +1028,10 @@ dialog.json-dialog::backdrop { background: rgba(0,0,0,0.5); }
 /* ── Text replacements ────────────────────────────────────────────────────── */
 .replacement-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
 .replacement-row { display: grid; grid-template-columns: 1fr 1fr 34px; gap: 8px; align-items: start; }
+.replacement-row[hidden] { display: none; }
+.replacement-search-bar { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.replacement-search-bar input { flex: 1; min-width: 0; }
+.replacement-search-bar .hint { margin: 0; white-space: nowrap; }
 .replacement-row textarea { min-width: 0; min-height: 54px; resize: vertical; }
 .replacement-remove { padding: 6px 0; font-size: 18px; }
 .replacement-actions, .replacement-file-actions { display: flex; gap: 8px; align-items: center; }
