@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { DictationError, DictationState, RecordOptions } from '@shared/types';
+import { DictationError, DictationState, RecordOptions, Settings } from '@shared/types';
 import { Transcriber } from './transcriber';
 import { Typer } from './typer';
 import { log } from './logger';
@@ -20,7 +20,8 @@ export class DictationController extends EventEmitter {
 
   constructor(
     private readonly transcriber: Transcriber,
-    private readonly typer: Typer
+    private readonly typer: Typer,
+    private readonly getSettings: () => Settings
   ) {
     super();
   }
@@ -44,7 +45,10 @@ export class DictationController extends EventEmitter {
     if (this.state === 'idle') {
       this.setState('recording');
       this.transcriber.warmUp();
-      this.emit('requestRecord', { encodeWav: this.transcriber.needsWavAudio() });
+      this.emit('requestRecord', {
+        encodeWav: this.transcriber.needsWavAudio(),
+        useBuiltInMicOnly: this.getSettings().useBuiltInMicOnly
+      });
     } else if (this.state === 'recording') {
       this.emit('requestStopRecord');
     }

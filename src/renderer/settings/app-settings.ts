@@ -7,6 +7,7 @@ const fields = {
   toggleShortcut: $<HTMLInputElement>('toggleShortcut'),
   cancelShortcut: $<HTMLInputElement>('cancelShortcut'),
   audioFormat: $<HTMLSelectElement>('audioFormat'),
+  useBuiltInMicOnly: $<HTMLInputElement>('useBuiltInMicOnly'),
   warmUpOnRecord: $<HTMLInputElement>('warmUpOnRecord'),
   copyToClipboard: $<HTMLInputElement>('copyToClipboard'),
   openAtLogin: $<HTMLInputElement>('openAtLogin')
@@ -157,6 +158,7 @@ export function loadAppSettings(s: Settings, openAtLogin: boolean): void {
   fields.toggleShortcut.value = s.toggleShortcut ?? '';
   fields.cancelShortcut.value = s.cancelShortcut ?? '';
   fields.audioFormat.value = s.audioFormat ?? 'webm';
+  fields.useBuiltInMicOnly.checked = s.useBuiltInMicOnly ?? true;
   fields.warmUpOnRecord.checked = s.warmUpOnRecord ?? true;
   fields.copyToClipboard.checked = s.copyToClipboard ?? false;
   fields.openAtLogin.checked = openAtLogin;
@@ -164,12 +166,13 @@ export function loadAppSettings(s: Settings, openAtLogin: boolean): void {
 
 export function appSettingsPatch(): Pick<
   Settings,
-  'toggleShortcut' | 'cancelShortcut' | 'audioFormat' | 'warmUpOnRecord' | 'copyToClipboard'
+  'toggleShortcut' | 'cancelShortcut' | 'audioFormat' | 'useBuiltInMicOnly' | 'warmUpOnRecord' | 'copyToClipboard'
 > {
   return {
     toggleShortcut: fields.toggleShortcut.value.trim(),
     cancelShortcut: fields.cancelShortcut.value.trim(),
     audioFormat: fields.audioFormat.value as Settings['audioFormat'],
+    useBuiltInMicOnly: fields.useBuiltInMicOnly.checked,
     warmUpOnRecord: fields.warmUpOnRecord.checked,
     copyToClipboard: fields.copyToClipboard.checked
   };

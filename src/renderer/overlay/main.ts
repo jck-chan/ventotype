@@ -1,5 +1,6 @@
 import { OverlayStatePayload, RecordOptions } from '@shared/types';
 import { encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
+import { getMicrophoneStream } from '../shared/microphone';
 
 declare global {
   interface Window {
@@ -31,7 +32,7 @@ let recorder: MediaRecorder | null = null;
 let chunks: Blob[] = [];
 let activeMimeType = 'audio/webm';
 let recordStartTime = 0;
-let recordOptions: RecordOptions = { encodeWav: false };
+let recordOptions: RecordOptions = { encodeWav: false, useBuiltInMicOnly: true };
 
 function showIcon(name: keyof typeof icons): void {
   for (const [key, el] of Object.entries(icons)) {
@@ -50,9 +51,9 @@ function triggerPopIn(): void {
 async function startRecording(options: RecordOptions): Promise<void> {
   chunks = [];
   recordStartTime = Date.now();
-  recordOptions = options ?? { encodeWav: false };
+  recordOptions = options ?? { encodeWav: false, useBuiltInMicOnly: true };
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    const stream = await getMicrophoneStream(recordOptions.useBuiltInMicOnly);
     const mimeType = getSupportedRecordingMimeType();
     activeMimeType = mimeType;
 

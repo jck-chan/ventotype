@@ -31,6 +31,7 @@ export interface AppSettings {
   toggleShortcut: string;
   cancelShortcut: string;
   audioFormat: 'wav' | 'webm';
+  useBuiltInMicOnly: boolean;
   warmUpOnRecord: boolean;
   /**
    * Leave the transcript on the clipboard as well as typing it. Off by default,
@@ -71,6 +72,7 @@ const BASE_SETTINGS: Settings = {
   toggleShortcut: 'Control+H',
   cancelShortcut: 'Control+Shift+H',
   audioFormat: 'webm',
+  useBuiltInMicOnly: true,
   warmUpOnRecord: false,
   copyToClipboard: false,
   textReplacements: [],
@@ -136,6 +138,7 @@ export function requiresWavAudio(type: EndpointType): boolean {
 /** Sent to the overlay renderer when recording starts, so it ships audio the endpoint accepts. */
 export interface RecordOptions {
   encodeWav: boolean;
+  useBuiltInMicOnly: boolean;
 }
 
 /** Returns the active profile, falling back to the first profile or the built-in default. */

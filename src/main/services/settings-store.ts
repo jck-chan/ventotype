@@ -92,6 +92,7 @@ export class SettingsStore extends EventEmitter {
       toggleShortcut: settings.toggleShortcut,
       cancelShortcut: settings.cancelShortcut,
       audioFormat: settings.audioFormat,
+      useBuiltInMicOnly: settings.useBuiltInMicOnly,
       warmUpOnRecord: settings.warmUpOnRecord,
       copyToClipboard: settings.copyToClipboard,
       textReplacements: settings.textReplacements

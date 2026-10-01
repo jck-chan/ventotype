@@ -25,7 +25,7 @@ if (!isPrimary) {
 const store = new SettingsStore();
 const transcriber = new Transcriber(() => store.value);
 const typer = new Typer(() => store.value);
-const controller = new DictationController(transcriber, typer);
+const controller = new DictationController(transcriber, typer, () => store.value);
 const fnHook = new FnHook();
 const shortcuts = new ShortcutManager(
   {

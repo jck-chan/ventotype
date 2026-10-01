@@ -1,5 +1,6 @@
 import { ConnectionProfile, PlaygroundTranscribeResult, requiresWavAudio, Settings } from '@shared/types';
 import { encodeAsWav, getSupportedRecordingMimeType, needsWavReencode } from '../shared/audio';
+import { getMicrophoneStream } from '../shared/microphone';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
@@ -35,6 +36,7 @@ let recordedChunks: Blob[] = [];
 let recordStream: MediaStream | null = null;
 let recordMimeType = '';
 let audioFormat: Settings['audioFormat'] = 'webm';
+let useBuiltInMicOnly = true;
 
 function showError(message: string): void {
   errorEl.textContent = message;
@@ -66,7 +68,7 @@ function selectedProfile(): ConnectionProfile | undefined {
 async function startRecording(): Promise<void> {
   clearError();
   try {
-    recordStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    recordStream = await getMicrophoneStream(useBuiltInMicOnly);
   } catch (err) {
     showError((err as Error).message || 'Microphone access denied.');
     return;
@@ -206,6 +208,7 @@ function formatRaw(raw: unknown): string {
 export function loadPlaygroundProfiles(s: Settings): void {
   profiles = s.profiles ?? [];
   audioFormat = s.audioFormat ?? 'webm';
+  useBuiltInMicOnly = s.useBuiltInMicOnly ?? true;
   const previous = profileSelect.value;
   profileSelect.innerHTML = '';
 
