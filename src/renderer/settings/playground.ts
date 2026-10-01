@@ -34,6 +34,7 @@ let recorder: MediaRecorder | null = null;
 let recordedChunks: Blob[] = [];
 let recordStream: MediaStream | null = null;
 let recordMimeType = '';
+let audioFormat: Settings['audioFormat'] = 'webm';
 
 function showError(message: string): void {
   errorEl.textContent = message;
@@ -100,7 +101,7 @@ async function stopRecording(): Promise<void> {
   recordLabel.textContent = 'Record';
 
   const mimeType = recordMimeType || 'audio/webm';
-  const blob = new Blob(recordedChunks, { type: mimeType });
+  let blob = new Blob(recordedChunks, { type: mimeType });
   recordedChunks = [];
   recorder = null;
 
@@ -109,7 +110,16 @@ async function stopRecording(): Promise<void> {
     return;
   }
 
-  setClip(blob, mimeType, 'In-app recording');
+  if (audioFormat === 'wav') {
+    try {
+      blob = await encodeAsWav(blob);
+      setClip(blob, 'audio/wav', 'In-app recording');
+    } catch (err) {
+      showError((err as Error).message || 'Could not encode WAV audio.');
+    }
+  } else {
+    setClip(blob, mimeType, 'In-app recording');
+  }
 }
 
 function toggleRecording(): void {
@@ -195,6 +205,7 @@ function formatRaw(raw: unknown): string {
 
 export function loadPlaygroundProfiles(s: Settings): void {
   profiles = s.profiles ?? [];
+  audioFormat = s.audioFormat ?? 'webm';
   const previous = profileSelect.value;
   profileSelect.innerHTML = '';
 

@@ -92,10 +92,11 @@ this multipart field but currently ignores it. An empty field sends nothing;
 there's no `DEFAULT_TRANSCRIPTION_PROMPT`-style fallback. See `whisperPrompt()`
 vs `transcriptionPrompt()` in `transcriber.ts`.
 
-Chat Completions only accepts `wav`/`mp3` in `input_audio` (both OpenAI and Gemini), so
-for these profiles the overlay renderer re-encodes its WebM/Opus take as 16 kHz mono WAV
-via Web Audio before handing it to main — see `requiresWavAudio()` and the `RecordOptions`
-passed with `dictation:start`. The transcription type keeps shipping WebM untouched.
+Settings → Behaviour offers WebM (the default, for smaller uploads) or WAV (for broader
+provider compatibility). The overlay records with MediaRecorder, then re-encodes to 16 kHz
+mono WAV via Web Audio when WAV is selected. Chat Completions only accepts `wav`/`mp3` in
+`input_audio` (both OpenAI and Gemini), so chat profiles use WAV even when WebM is selected.
+See `requiresWavAudio()` and the `RecordOptions` passed with `dictation:start`.
 
 ## Playground tab
 

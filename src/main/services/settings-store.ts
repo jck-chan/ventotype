@@ -89,6 +89,7 @@ export class SettingsStore extends EventEmitter {
     writeJsonAtomic(this.settingsPath, {
       toggleShortcut: settings.toggleShortcut,
       cancelShortcut: settings.cancelShortcut,
+      audioFormat: settings.audioFormat,
       warmUpOnRecord: settings.warmUpOnRecord,
       copyToClipboard: settings.copyToClipboard
     });

@@ -25,9 +25,10 @@ const API_LABEL: Record<EndpointType, { tag: string; name: string }> = {
 export class Transcriber {
   constructor(private readonly getSettings: () => Settings) {}
 
-  /** Whether the active profile needs the recorder to hand over WAV instead of WebM. */
+  /** Whether the selected format or active endpoint needs WAV. */
   needsWavAudio(): boolean {
-    return requiresWavAudio(activeProfile(this.getSettings()).type);
+    const settings = this.getSettings();
+    return settings.audioFormat === 'wav' || requiresWavAudio(activeProfile(settings).type);
   }
 
   /** Fire-and-forget ping that triggers lazy model loading on the server. */

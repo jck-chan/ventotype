@@ -30,6 +30,7 @@ export interface ConnectionProfile {
 export interface AppSettings {
   toggleShortcut: string;
   cancelShortcut: string;
+  audioFormat: 'wav' | 'webm';
   warmUpOnRecord: boolean;
   /**
    * Leave the transcript on the clipboard as well as typing it. Off by default,
@@ -63,6 +64,7 @@ const BASE_SETTINGS: Settings = {
   activeProfileId: DEFAULT_PROFILE.id,
   toggleShortcut: 'Control+H',
   cancelShortcut: 'Control+Shift+H',
+  audioFormat: 'webm',
   warmUpOnRecord: false,
   copyToClipboard: false,
 };

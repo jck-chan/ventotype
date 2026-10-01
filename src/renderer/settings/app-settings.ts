@@ -6,6 +6,7 @@ const $ = <T extends HTMLElement>(id: string): T =>
 const fields = {
   toggleShortcut: $<HTMLInputElement>('toggleShortcut'),
   cancelShortcut: $<HTMLInputElement>('cancelShortcut'),
+  audioFormat: $<HTMLSelectElement>('audioFormat'),
   warmUpOnRecord: $<HTMLInputElement>('warmUpOnRecord'),
   copyToClipboard: $<HTMLInputElement>('copyToClipboard'),
   openAtLogin: $<HTMLInputElement>('openAtLogin')
@@ -131,8 +132,8 @@ export function initAppSettings(onDirty: () => void): void {
   document.querySelectorAll<HTMLButtonElement>('.clear-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const targetId = btn.dataset['target'];
-      if (targetId && targetId in fields) {
-        fields[targetId as AppSettingsFieldId].value = '';
+      if (targetId === 'toggleShortcut' || targetId === 'cancelShortcut') {
+        fields[targetId].value = '';
         onDirty();
       }
     });
@@ -155,6 +156,7 @@ export function initAppSettings(onDirty: () => void): void {
 export function loadAppSettings(s: Settings, openAtLogin: boolean): void {
   fields.toggleShortcut.value = s.toggleShortcut ?? '';
   fields.cancelShortcut.value = s.cancelShortcut ?? '';
+  fields.audioFormat.value = s.audioFormat ?? 'webm';
   fields.warmUpOnRecord.checked = s.warmUpOnRecord ?? true;
   fields.copyToClipboard.checked = s.copyToClipboard ?? false;
   fields.openAtLogin.checked = openAtLogin;
@@ -162,11 +164,12 @@ export function loadAppSettings(s: Settings, openAtLogin: boolean): void {
 
 export function appSettingsPatch(): Pick<
   Settings,
-  'toggleShortcut' | 'cancelShortcut' | 'warmUpOnRecord' | 'copyToClipboard'
+  'toggleShortcut' | 'cancelShortcut' | 'audioFormat' | 'warmUpOnRecord' | 'copyToClipboard'
 > {
   return {
     toggleShortcut: fields.toggleShortcut.value.trim(),
     cancelShortcut: fields.cancelShortcut.value.trim(),
+    audioFormat: fields.audioFormat.value as Settings['audioFormat'],
     warmUpOnRecord: fields.warmUpOnRecord.checked,
     copyToClipboard: fields.copyToClipboard.checked
   };

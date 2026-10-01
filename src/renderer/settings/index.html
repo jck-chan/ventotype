@@ -287,6 +287,15 @@
           <section class="section">
             <h2 class="section-title">Behaviour</h2>
 
+            <div class="field">
+              <label for="audioFormat">Audio format</label>
+              <select id="audioFormat" class="select">
+                <option value="webm">WebM — faster uploads</option>
+                <option value="wav">WAV — wider compatibility</option>
+              </select>
+              <p class="hint">Chat endpoints always use WAV because they do not accept WebM.</p>
+            </div>
+
             <div class="toggle-row">
               <label class="toggle-label" for="openAtLogin">Open at login</label>
               <label class="toggle" title="Open at login">
