@@ -50,7 +50,7 @@ export interface ProfilesData {
 export interface Settings extends AppSettings, ProfilesData {}
 
 export const DEFAULT_PROFILE: ConnectionProfile = {
-  id: 'default',
+  id: globalThis.crypto.randomUUID(),
   name: 'main',
   type: 'openai-transcribe',
   baseURL: '',

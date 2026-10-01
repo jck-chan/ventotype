@@ -67,8 +67,7 @@ let copyResetTimer: number | undefined;
 let renameTargetId = '';
 let profileDirtyVersion = 0;
 
-const genId = (): string =>
-  `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+const genId = (): string => crypto.randomUUID();
 
 function getActive(): ConnectionProfile {
   return profiles.find((p) => p.id === activeId) ?? profiles[0];

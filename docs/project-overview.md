@@ -60,6 +60,9 @@ OpenRouter supports [OpenAI-compatible multipart transcription requests](https:/
 
 Model refresh uses OpenRouter's `GET /models?output_modalities=transcription` for its base URL. OpenAI's `GET /models` has no capability filter, so the app keeps the documented file-transcription model family from that response. Other compatible servers keep their full model lists because their model IDs and capability metadata vary.
 
+Connection profiles use UUIDs as their IDs. Migration 004 replaces legacy IDs in
+`profiles.json` and updates `activeProfileId` to keep the selected profile.
+
 `openai-chat` exists for models that transcribe well but ship no transcription route —
 Gemini being the motivating case. The request is two messages: a system message holding the
 transcription rules, then a user turn whose content parts are a short instruction and the

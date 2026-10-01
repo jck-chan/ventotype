@@ -5,7 +5,7 @@
  * so it can't carry one now without silently un-applying itself on installs
  * that already sit at "1".
  */
-export const USER_DATA_VERSION = 3;
+export const USER_DATA_VERSION = 4;
 
 /** Subfolder under Electron's userData where VentoType stores its files. */
 export const USER_DATA_SUBDIR = 'data';
