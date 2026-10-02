@@ -488,6 +488,41 @@ textarea:focus {
   border-radius: var(--radius);
 }
 
+.profile-replacements {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.profile-replacements-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-replacements-head > div { min-width: 0; }
+.profile-replacements-head .section-title { margin-bottom: 5px; }
+.profile-replacements-head .btn-secondary { flex-shrink: 0; }
+.profile-replacement-list { display: flex; flex-direction: column; gap: 8px; }
+.profile-replacement-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px;
+  gap: 8px;
+  align-items: start;
+}
+.profile-replacement-row input { min-width: 0; }
+.profile-replacement-row input[aria-invalid="true"] { border-color: var(--red); }
+.profile-replacement-error {
+  grid-column: 1 / -1;
+  color: var(--red);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.profile-replacement-error:empty { display: none; }
+
 /* ── Selects ─────────────────────────────────────────────────────────────── */
 /* The profile trigger is a button, not a <select>, but it has to read as the
    same control — so it shares the chevron and the box styling. */

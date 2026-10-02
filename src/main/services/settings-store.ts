@@ -12,6 +12,7 @@ import { readJsonFile, writeJsonAtomic } from '../user-data/json-io';
 import { userDataPaths } from '../user-data/paths';
 import { runUserDataMigrations } from '../user-data/runner';
 import { validateTextReplacements } from '@shared/text-replacements';
+import { validateProfileReplacements } from '@shared/profile-replacements';
 
 const DEFAULTS: Settings = defaultSettingsFor(process.platform);
 
@@ -55,7 +56,12 @@ export class SettingsStore extends EventEmitter {
       ? this.current.textReplacements
       : validateTextReplacements(patch.textReplacements);
     const prev = this.current;
-    const next: Settings = { ...prev, ...patch, textReplacements: replacements };
+    const profiles = patch.profiles === undefined ? prev.profiles :
+      patch.profiles.map((profile) => ({
+        ...profile,
+        regexReplacements: validateProfileReplacements(profile.regexReplacements)
+      }));
+    const next: Settings = { ...prev, ...patch, profiles, textReplacements: replacements };
     this.save(next);
     this.current = next;
     this.emit('change', next, prev);
@@ -64,9 +70,13 @@ export class SettingsStore extends EventEmitter {
 
   updateActiveProfile(profile: ConnectionProfile, activeProfileId: string): Settings {
     const prev = this.current;
+    const validatedProfile = {
+      ...profile,
+      regexReplacements: validateProfileReplacements(profile.regexReplacements)
+    };
     const profiles = prev.profiles.some((p) => p.id === profile.id)
-      ? prev.profiles.map((p) => (p.id === profile.id ? { ...profile } : p))
-      : [...prev.profiles, { ...profile }];
+      ? prev.profiles.map((p) => (p.id === profile.id ? validatedProfile : p))
+      : [...prev.profiles, validatedProfile];
     const next: Settings = { ...prev, profiles, activeProfileId };
     this.saveProfiles(next);
     this.current = next;
@@ -85,6 +95,10 @@ export class SettingsStore extends EventEmitter {
       ...DEFAULTS,
       ...appSettings,
       ...profilesData,
+      profiles: (profilesData.profiles ?? DEFAULTS.profiles).map((profile) => ({
+        ...profile,
+        regexReplacements: validateProfileReplacements(profile.regexReplacements)
+      })),
       textReplacements: validateTextReplacements(appSettings.textReplacements ?? [])
     };
   }

@@ -131,10 +131,17 @@ no separate AI formatting stage, so all rules run after transcription.
 
 Matching ignores case, treats comma-separated source text as variants, and
 prefers longer phrases. Latin text respects word boundaries; Han characters
-can be replaced inside continuous Chinese text. The final transcript is
-processed once before typing or copying, so replacement output is not processed
-again. Import replaces the editor list and requires Save changes before it
+can be replaced inside continuous Chinese text. App-wide rules run in one pass
+before typing or copying, so their output is not processed by another app-wide
+rule. Import replaces the editor list and requires Save changes before it
 affects dictation. VentoType's earlier versioned JSON export remains importable.
+
+Each connection profile also has its own ordered regex replacement list in
+`profiles.json`. A rule has a JavaScript regular expression pattern and replacement
+text; an empty replacement removes matches, and capture groups such as `$1` work.
+All matches are replaced with the `g` flag, after the app-wide plain replacements
+and before typing or copying. Profile rules are validated on save. Duplicating a
+profile copies its rules; switching profiles saves the profile being left.
 
 - **Single instance** — second launch focuses the settings window
 - **Dock hidden** — `app.dock?.hide()` on macOS; app lives entirely in tray

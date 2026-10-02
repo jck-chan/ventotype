@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { DictationError, DictationState, RecordOptions, Settings } from '@shared/types';
+import { activeProfile, DictationError, DictationState, RecordOptions, Settings } from '@shared/types';
 import { Transcriber } from './transcriber';
 import { Typer } from './typer';
 import { log } from './logger';
@@ -75,6 +75,7 @@ export class DictationController extends EventEmitter {
 
   async handleAudio(audio: ArrayBuffer, mimeType: string): Promise<void> {
     if (this.state !== 'recording') return;
+    const profile = activeProfile(this.getSettings());
     this.setState('transcribing');
     const abort = new AbortController();
     this.transcribeAbort = abort;
@@ -85,7 +86,7 @@ export class DictationController extends EventEmitter {
       if (abort.signal.aborted) return;
       if (!text) { this.setState('idle'); return; }
       this.setState('typing');
-      await this.typer.type(text);
+      await this.typer.type(text, profile);
       this.setState('idle');
     } catch (err) {
       if (abort.signal.aborted) return; // cancelled on purpose — not a failure to report

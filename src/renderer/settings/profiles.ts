@@ -5,8 +5,10 @@ import {
   DEFAULT_TRANSCRIPTION_PROMPT,
   EndpointType,
   DEFAULT_MODELS,
+  ProfileRegexReplacement,
   Settings
 } from '@shared/types';
+import { MAX_PROFILE_REPLACEMENTS, validateProfileReplacements } from '@shared/profile-replacements';
 
 const $ = <T extends HTMLElement>(id: string): T =>
   document.getElementById(id) as T;
@@ -48,6 +50,8 @@ const refreshModels = $<HTMLButtonElement>('refreshModels');
 const modelDropdown = $<HTMLUListElement>('model-dropdown');
 const baseURLDropdown = $<HTMLUListElement>('base-url-dropdown');
 const refreshIcon = $('refresh-icon');
+const profileReplacementList = $<HTMLDivElement>('profileReplacementList');
+const addProfileReplacementBtn = $<HTMLButtonElement>('addProfileReplacement');
 
 const OPENAI_BASE_URL = 'https://api.openai.com/v1';
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
@@ -83,6 +87,7 @@ function syncFormToActive(): void {
   p.language = fields.language.value.trim();
   p.prompt = fields.prompt.value.trim();
   p.executionMessage = fields.executionMessage.value.trim();
+  p.regexReplacements = readProfileReplacementRows();
 }
 
 function loadActiveToForm(): void {
@@ -95,10 +100,96 @@ function loadActiveToForm(): void {
   fields.language.value = p.language;
   fields.prompt.value = p.prompt ?? '';
   fields.executionMessage.value = p.executionMessage ?? '';
+  profileReplacementList.replaceChildren();
+  for (const rule of p.regexReplacements ?? []) addProfileReplacementRow(rule);
+  syncAddProfileReplacementButton();
   syncPromptGuidance();
   allModels = [];
   hideDropdown();
   hideURLDropdown();
+}
+
+function readProfileReplacementRows(): ProfileRegexReplacement[] {
+  return [...profileReplacementList.querySelectorAll<HTMLElement>('.profile-replacement-row')]
+    .map((row) => ({
+      pattern: row.querySelector<HTMLInputElement>('.profile-replacement-pattern')!.value,
+      replacement: row.querySelector<HTMLInputElement>('.profile-replacement-value')!.value
+    }));
+}
+
+function checkProfileReplacementPattern(input: HTMLInputElement, error: HTMLElement): boolean {
+  const pattern = input.value;
+  let message = '';
+  if (!pattern) message = 'Enter a pattern.';
+  else {
+    try { new RegExp(pattern, 'g'); }
+    catch (err) { message = (err as Error).message; }
+  }
+  input.setAttribute('aria-invalid', String(Boolean(message)));
+  error.textContent = message;
+  return !message;
+}
+
+function addProfileReplacementRow(rule: ProfileRegexReplacement): void {
+  const row = document.createElement('div');
+  row.className = 'profile-replacement-row';
+
+  const pattern = document.createElement('input');
+  pattern.type = 'text';
+  pattern.className = 'profile-replacement-pattern';
+  pattern.placeholder = 'Pattern, e.g. \\[.*?\\]';
+  pattern.setAttribute('aria-label', 'Regular expression pattern');
+  pattern.spellcheck = false;
+  pattern.maxLength = 500;
+  pattern.value = rule.pattern;
+
+  const replacement = document.createElement('input');
+  replacement.type = 'text';
+  replacement.className = 'profile-replacement-value';
+  replacement.placeholder = 'empty removes';
+  replacement.setAttribute('aria-label', 'Replacement text');
+  replacement.spellcheck = false;
+  replacement.maxLength = 10_000;
+  replacement.value = rule.replacement;
+
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'btn-secondary icon-btn replacement-remove';
+  remove.textContent = '×';
+  remove.title = 'Remove rule';
+  remove.setAttribute('aria-label', 'Remove rule');
+
+  const error = document.createElement('span');
+  error.className = 'profile-replacement-error';
+  error.setAttribute('role', 'status');
+  pattern.addEventListener('input', () => {
+    checkProfileReplacementPattern(pattern, error);
+    markProfileDirtyExternal();
+  });
+  replacement.addEventListener('input', markProfileDirtyExternal);
+  remove.addEventListener('click', () => {
+    row.remove();
+    syncAddProfileReplacementButton();
+    markProfileDirtyExternal();
+  });
+  row.append(pattern, replacement, remove, error);
+  profileReplacementList.append(row);
+  syncAddProfileReplacementButton();
+}
+
+function syncAddProfileReplacementButton(): void {
+  addProfileReplacementBtn.disabled = profileReplacementList.childElementCount >= MAX_PROFILE_REPLACEMENTS;
+}
+
+function validateProfileReplacementRows(): boolean {
+  const rows = [...profileReplacementList.querySelectorAll<HTMLElement>('.profile-replacement-row')];
+  const valid = rows.map((row) => checkProfileReplacementPattern(
+    row.querySelector<HTMLInputElement>('.profile-replacement-pattern')!,
+    row.querySelector<HTMLElement>('.profile-replacement-error')!
+  )).every(Boolean);
+  if (!valid) rows.find((row) => row.querySelector('[aria-invalid="true"]'))
+    ?.querySelector<HTMLInputElement>('.profile-replacement-pattern')?.focus();
+  return valid;
 }
 
 /**
@@ -239,7 +330,12 @@ function duplicateProfile(id: string): void {
   const original = profiles[index];
   let number = 1;
   while (profiles.some((p) => p.name === `${original.name} (${number})`)) number += 1;
-  const copy = { ...original, id: genId(), name: `${original.name} (${number})` };
+  const copy = {
+    ...original,
+    id: genId(),
+    name: `${original.name} (${number})`,
+    regexReplacements: (original.regexReplacements ?? []).map((rule) => ({ ...rule }))
+  };
   profiles.splice(index + 1, 0, copy);
   activeId = copy.id;
   closeProfileDropdown();
@@ -530,6 +626,13 @@ export function initProfiles(
 
   const switchTo = (id: string): void => {
     if (id === activeId) return;
+    try {
+      validateProfileReplacements(readProfileReplacementRows());
+    } catch (err) {
+      validateProfileReplacementRows();
+      onProfileSaveError((err as Error).message);
+      return;
+    }
     syncFormToActive();
     const profileToSave = { ...getActive() };
     activeId = id;
@@ -589,6 +692,13 @@ export function initProfiles(
     loadActiveToForm();
     markProfileDirtyExternal();
     openRenameDialog(profile.id);
+  });
+
+  addProfileReplacementBtn.addEventListener('click', () => {
+    if (addProfileReplacementBtn.disabled) return;
+    addProfileReplacementRow({ pattern: '', replacement: '' });
+    markProfileDirtyExternal();
+    profileReplacementList.querySelector<HTMLInputElement>('.profile-replacement-row:last-child .profile-replacement-pattern')?.focus();
   });
 
   renameCancelBtn.addEventListener('click', () => renameDialog.close());

@@ -3,8 +3,9 @@ import { execFile } from 'node:child_process';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import koffi from 'koffi';
-import { Settings } from '@shared/types';
+import { ConnectionProfile, Settings } from '@shared/types';
 import { applyTextReplacements } from '@shared/text-replacements';
+import { applyProfileReplacements } from '@shared/profile-replacements';
 
 const execFileAsync = promisify(execFile);
 
@@ -20,10 +21,11 @@ const execFileAsync = promisify(execFile);
 export class Typer {
   constructor(private readonly getSettings: () => Settings) {}
 
-  async type(text: string): Promise<void> {
+  async type(text: string, profile: ConnectionProfile): Promise<void> {
     if (!text) return;
     const { copyToClipboard, textReplacements } = this.getSettings();
     text = applyTextReplacements(text, textReplacements);
+    text = applyProfileReplacements(text, profile.regexReplacements);
     if (!text) return;
 
     switch (process.platform) {

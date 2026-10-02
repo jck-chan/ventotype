@@ -230,6 +230,17 @@
                 <textarea id="executionMessage" rows="2" spellcheck="false"></textarea>
                 <p class="hint" id="executionMessageHint"></p>
               </div>
+
+              <div class="profile-replacements">
+                <div class="profile-replacements-head">
+                  <div>
+                    <h2 class="section-title">Regex replacements</h2>
+                    <p class="hint">Applied in order. Use JavaScript regex patterns and $1, $2, etc. for capture groups.</p>
+                  </div>
+                  <button type="button" class="btn-secondary" id="addProfileReplacement">+ Add rule</button>
+                </div>
+                <div id="profileReplacementList" class="profile-replacement-list"></div>
+              </div>
             </div>
           </section>
         </div>

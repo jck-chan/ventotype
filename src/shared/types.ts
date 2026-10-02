@@ -25,6 +25,13 @@ export interface ConnectionProfile {
    * Empty/absent falls back to `DEFAULT_CHAT_EXECUTION_MESSAGE`.
    */
   executionMessage?: string;
+  /** Applied in order to the final transcript before typing or copying. */
+  regexReplacements?: ProfileRegexReplacement[];
+}
+
+export interface ProfileRegexReplacement {
+  pattern: string;
+  replacement: string;
 }
 
 export interface AppSettings {
@@ -67,7 +74,8 @@ export const DEFAULT_PROFILE: ConnectionProfile = {
   baseURL: '',
   apiKey: '',
   model: 'whisper-1',
-  language: ''
+  language: '',
+  regexReplacements: []
 };
 
 const BASE_SETTINGS: Settings = {
