@@ -1,6 +1,7 @@
 export function initTabs(): void {
   const tabButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('.tab-btn'));
   const tabPanels = Array.from(document.querySelectorAll<HTMLElement>('.tab-panel'));
+  const content = document.querySelector<HTMLElement>('.content');
 
   function activateTab(button: HTMLButtonElement): void {
     const targetId = button.dataset['tabTarget'];
@@ -18,6 +19,8 @@ export function initTabs(): void {
       tab.setAttribute('aria-selected', String(isActive));
       tab.tabIndex = isActive ? 0 : -1;
     }
+
+    if (content) content.scrollTop = 0;
   }
 
   tabButtons.forEach((button, index) => {

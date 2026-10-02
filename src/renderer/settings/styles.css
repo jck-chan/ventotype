@@ -9,6 +9,7 @@
   --border:     rgba(255,255,255,0.07);
   --border-focus: rgba(124,58,237,0.6);
   --text:       #e8e8ec;
+  --text-label: #c7c7d1;
   --text-muted: #a7a7b5;
   --text-subtle: #9696a4;
   --accent:     #7c3aed;
@@ -154,13 +155,13 @@ html, body {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-label);
 }
 
 /* The Settings tab groups related controls without adding helper copy to every row. */
 #general-panel { gap: 12px; }
 
-#general-panel > .section {
+:is(#general-panel, #replacements-panel) > .section {
   gap: 0;
   padding: 10px 14px;
   background: var(--bg-card);
@@ -168,7 +169,7 @@ html, body {
   border-radius: var(--radius);
 }
 
-#general-panel .section-title {
+:is(#general-panel, #replacements-panel) .section-title {
   margin-bottom: 2px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -178,6 +179,8 @@ html, body {
   letter-spacing: 0;
   text-transform: none;
 }
+
+:is(#general-panel, #replacements-panel) .section-title + .hint { margin-top: 10px; }
 
 #general-panel .field-row { padding: 10px 0 2px; }
 
@@ -219,7 +222,7 @@ html, body {
 label {
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--text-label);
 }
 
 .label-hint {
@@ -687,7 +690,7 @@ select.select option { background: var(--bg); color: var(--text); }
 .toggle-label {
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--text-label);
 }
 
 .toggle-copy {
@@ -866,7 +869,7 @@ dialog.rename-dialog::backdrop { background: rgba(0,0,0,0.5); }
 #renameForm label {
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--text-label);
 }
 
 .rename-actions {
@@ -1063,13 +1066,10 @@ dialog.json-dialog::backdrop { background: rgba(0,0,0,0.5); }
 .hidden { display: none !important; }
 
 /* ── Text replacements ────────────────────────────────────────────────────── */
-.replacement-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
-.replacement-row { display: grid; grid-template-columns: 1fr 1fr 34px; gap: 8px; align-items: start; }
-.replacement-row[hidden] { display: none; }
-.replacement-search-bar { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
-.replacement-search-bar input { flex: 1; min-width: 0; }
-.replacement-search-bar .hint { margin: 0; white-space: nowrap; }
-.replacement-row textarea { min-width: 0; min-height: 54px; resize: vertical; }
-.replacement-remove { padding: 6px 0; font-size: 18px; }
-.replacement-actions, .replacement-file-actions { display: flex; gap: 8px; align-items: center; }
-.replacement-actions { justify-content: space-between; flex-wrap: wrap; margin-bottom: 12px; }
+.replacement-set-bar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.replacement-set-list { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.replacement-set-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.replacement-set-row.dragging { opacity: 0.45; }
+.replacement-set-grip { cursor: grab; user-select: none; color: var(--text-muted); padding: 3px; }
+.replacement-set-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.replacement-set-errors { color: var(--red); white-space: pre-line; font-size: 12px; margin-top: 10px; }

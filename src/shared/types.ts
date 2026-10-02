@@ -47,16 +47,23 @@ export interface AppSettings {
    * afterwards rather than whether it's used.
    */
   copyToClipboard: boolean;
-  textReplacements: TextReplacement[];
 }
 
 export interface TextReplacement {
-  id: string;
-  createdAt: number;
-  isRegex: boolean;
   original: string;
   replacement: string;
-  timing: 'beforeAI' | 'afterAI' | 'both';
+}
+
+export interface TextReplacementSet {
+  id: string;
+  filename: string;
+  enabled: boolean;
+  replacements: TextReplacement[];
+}
+
+export interface TextReplacementSetError {
+  filename: string;
+  message: string;
 }
 
 export interface ProfilesData {
@@ -65,7 +72,12 @@ export interface ProfilesData {
 }
 
 /** In-memory / IPC view combining app settings and connection profiles. */
-export interface Settings extends AppSettings, ProfilesData {}
+export interface Settings extends AppSettings, ProfilesData {
+  textReplacementSets: TextReplacementSet[];
+  textReplacementSetErrors: TextReplacementSetError[];
+  /** Guards Settings saves against overwriting rule files edited outside the app. */
+  textReplacementSetsRevision: string;
+}
 
 export const DEFAULT_PROFILE: ConnectionProfile = {
   id: globalThis.crypto.randomUUID(),
@@ -87,7 +99,9 @@ const BASE_SETTINGS: Settings = {
   useBuiltInMicOnly: true,
   warmUpOnRecord: false,
   copyToClipboard: false,
-  textReplacements: [],
+  textReplacementSets: [],
+  textReplacementSetErrors: [],
+  textReplacementSetsRevision: '',
 };
 
 // Keyed by `process.platform` values. Pure data — no `process` access here so this

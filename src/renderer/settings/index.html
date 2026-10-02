@@ -54,6 +54,18 @@
         >
           Playground
         </button>
+        <button
+          id="tab-replacements"
+          class="tab-btn"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="replacements-panel"
+          tabindex="-1"
+          data-tab-target="replacements-panel"
+        >
+          Text replacements
+        </button>
       </nav>
 
       <main class="content">
@@ -298,26 +310,18 @@
           <section class="section">
             <h2 class="section-title">Behaviour</h2>
 
-            <div class="toggle-row audio-format-row">
-              <label class="toggle-label" for="audioFormat">Audio format</label>
-              <select id="audioFormat" class="select">
-                <option value="webm">WebM — faster uploads</option>
-                <option value="wav">WAV — wider compatibility</option>
-              </select>
+            <div class="toggle-row">
+              <label class="toggle-label" for="openAtLogin">Open at login</label>
+              <label class="toggle" title="Open at login">
+                <input type="checkbox" id="openAtLogin" />
+                <span class="toggle-track"></span>
+              </label>
             </div>
 
             <div class="toggle-row">
               <label class="toggle-label" for="useBuiltInMicOnly">Use this device’s microphone only</label>
               <label class="toggle" title="Use this device’s microphone only">
                 <input type="checkbox" id="useBuiltInMicOnly" />
-                <span class="toggle-track"></span>
-              </label>
-            </div>
-
-            <div class="toggle-row">
-              <label class="toggle-label" for="openAtLogin">Open at login</label>
-              <label class="toggle" title="Open at login">
-                <input type="checkbox" id="openAtLogin" />
                 <span class="toggle-track"></span>
               </label>
             </div>
@@ -341,6 +345,14 @@
               </label>
             </div>
 
+            <div class="toggle-row audio-format-row">
+              <label class="toggle-label" for="audioFormat">Audio format</label>
+              <select id="audioFormat" class="select">
+                <option value="webm">WebM — faster uploads</option>
+                <option value="wav">WAV — wider compatibility</option>
+              </select>
+            </div>
+
             <div class="toggle-row">
               <span class="toggle-label">Application logs</span>
               <button class="btn-secondary" id="openLogFile">Open file</button>
@@ -350,25 +362,6 @@
               <span class="toggle-label">User data folder</span>
               <button class="btn-secondary" id="openUserDataFolder">Open folder</button>
             </div>
-          </section>
-
-          <section class="section">
-            <h2 class="section-title">Text replacements</h2>
-            <p class="hint">Replace whole phrases in dictated text before typing or copying. Matching ignores case; separate alternative phrases with commas.</p>
-            <div class="replacement-search-bar">
-              <input id="textReplacementSearch" type="search" placeholder="Search rules" aria-label="Search text replacements" />
-              <span id="textReplacementCount" class="hint"></span>
-            </div>
-            <div id="textReplacementList" class="replacement-list"></div>
-            <div class="replacement-actions">
-              <button type="button" class="btn-secondary" id="addTextReplacement">+ Add rule</button>
-              <div class="replacement-file-actions">
-                <button type="button" class="btn-secondary" id="importTextReplacements">Import JSON</button>
-                <button type="button" class="btn-secondary" id="exportTextReplacements">Export JSON</button>
-              </div>
-            </div>
-            <p class="hint">Import replaces this list. Save changes to apply imported rules.</p>
-            <p class="hint">Compatible with Spokenly plain-rule JSON exports. Regex rules are not supported; timing metadata is preserved.</p>
           </section>
         </div>
 
@@ -420,6 +413,25 @@
               <p class="hint" id="playgroundResultMeta"></p>
               <textarea id="playgroundTranscript" rows="6" readonly spellcheck="false"></textarea>
             </div>
+          </section>
+        </div>
+
+        <div
+          id="replacements-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="tab-replacements"
+          hidden
+        >
+          <section class="section">
+            <h2 class="section-title">Text replacements</h2>
+            <p class="hint">Enabled rule sets run from top to bottom. Edit their JSON files in the folder; save changes to apply order and toggles.</p>
+            <div class="replacement-set-bar">
+              <button type="button" class="btn-secondary" id="addTextReplacementSet">+ New</button>
+              <button type="button" class="btn-secondary" id="openTextReplacementsFolder">Open rule sets folder</button>
+            </div>
+            <div id="textReplacementSetList" class="replacement-set-list" role="list" aria-label="Text replacement rule sets"></div>
+            <p id="textReplacementSetErrors" class="replacement-set-errors" role="alert" hidden></p>
           </section>
         </div>
 

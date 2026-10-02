@@ -23,8 +23,10 @@ export class Typer {
 
   async type(text: string, profile: ConnectionProfile): Promise<void> {
     if (!text) return;
-    const { copyToClipboard, textReplacements } = this.getSettings();
-    text = applyTextReplacements(text, textReplacements);
+    const { copyToClipboard, textReplacementSets } = this.getSettings();
+    for (const set of textReplacementSets) {
+      if (set.enabled) text = applyTextReplacements(text, set.replacements);
+    }
     text = applyProfileReplacements(text, profile.regexReplacements);
     if (!text) return;
 

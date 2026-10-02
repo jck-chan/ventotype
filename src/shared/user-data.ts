@@ -5,7 +5,7 @@
  * so it can't carry one now without silently un-applying itself on installs
  * that already sit at "1".
  */
-export const USER_DATA_VERSION = 4;
+export const USER_DATA_VERSION = 5;
 
 /** Subfolder under Electron's userData where VentoType stores its files. */
 export const USER_DATA_SUBDIR = 'data';
@@ -17,3 +17,5 @@ export interface UserDataManifest {
 export const USER_DATA_MANIFEST_FILE = 'userdata-manifest.json';
 export const SETTINGS_FILE = 'settings.json';
 export const PROFILES_FILE = 'profiles.json';
+export const TEXT_REPLACEMENTS_DIR = 'text-replacements';
+export const TEXT_REPLACEMENTS_METADATA_FILE = 'text-replacements-metadata.json';

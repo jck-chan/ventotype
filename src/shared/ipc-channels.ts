@@ -6,8 +6,7 @@ export const IPC = {
     SetDirty: 'settings:set-dirty'
   },
   TextReplacements: {
-    Import: 'text-replacements:import',
-    Export: 'text-replacements:export'
+    OpenFolder: 'text-replacements:open-folder'
   },
   Dictation: {
     Start: 'dictation:start',

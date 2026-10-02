@@ -1,11 +1,6 @@
-import { ipcMain, IpcMainInvokeEvent, shell, app, dialog, BrowserWindow } from 'electron';
-import { readFile, stat, writeFile } from 'node:fs/promises';
+import { ipcMain, IpcMainInvokeEvent, shell, app } from 'electron';
 import { IPC } from '@shared/ipc-channels';
 import { ConnectionProfile, EndpointType, Settings } from '@shared/types';
-import {
-  parseTextReplacementsFile,
-  validateTextReplacements
-} from '@shared/text-replacements';
 import { PermissionId } from '@shared/permissions';
 import { SettingsStore } from './services/settings-store';
 import { DictationController } from './services/dictation-controller';
@@ -78,43 +73,7 @@ export function registerIpcHandlers(
       store.updateActiveProfile(profile, activeProfileId)
   );
 
-  ipcMain.handle(IPC.TextReplacements.Import, async (event) => {
-    const parent = BrowserWindow.fromWebContents(event.sender);
-    const options = {
-      title: 'Import text replacements',
-      properties: ['openFile'] as Array<'openFile'>,
-      filters: [{ name: 'JSON', extensions: ['json'] }]
-    };
-    const selection = parent
-      ? await dialog.showOpenDialog(parent, options)
-      : await dialog.showOpenDialog(options);
-    if (selection.canceled || !selection.filePaths[0]) return null;
-    const path = selection.filePaths[0];
-    if ((await stat(path)).size > 5_000_000) throw new Error('JSON file is too large (5 MB maximum).');
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(await readFile(path, 'utf8'));
-    } catch {
-      throw new Error('Could not read a valid JSON file.');
-    }
-    return parseTextReplacementsFile(parsed);
-  });
-
-  ipcMain.handle(IPC.TextReplacements.Export, async (event, value: unknown) => {
-    const replacements = validateTextReplacements(value);
-    const parent = BrowserWindow.fromWebContents(event.sender);
-    const options = {
-      title: 'Export text replacements',
-      defaultPath: 'ventotype-replacements.json',
-      filters: [{ name: 'JSON', extensions: ['json'] }]
-    };
-    const selection = parent
-      ? await dialog.showSaveDialog(parent, options)
-      : await dialog.showSaveDialog(options);
-    if (selection.canceled || !selection.filePath) return false;
-    await writeFile(selection.filePath, JSON.stringify(replacements, null, 2) + '\n', 'utf8');
-    return true;
-  });
+  ipcMain.handle(IPC.TextReplacements.OpenFolder, () => shell.openPath(store.ruleSetsDir));
 
   // Settings is recording a shortcut: the keys belong to that field, not to dictation.
   ipcMain.handle(IPC.Shortcuts.SetCapturing, (_e: IpcMainInvokeEvent, capturing: boolean) =>

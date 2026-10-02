@@ -1,4 +1,4 @@
-import { DictationError, PlaygroundTranscribeResult, Settings, TextReplacement } from '@shared/types';
+import { DictationError, PlaygroundTranscribeResult, Settings } from '@shared/types';
 import { PermissionId, PermissionState } from '@shared/permissions';
 import {
   appSettingsPatch,
@@ -19,7 +19,7 @@ import {
   profilesPatch
 } from './profiles';
 import { initTabs } from './tabs';
-import { initTextReplacements, loadTextReplacements, textReplacementsPatch } from './text-replacements';
+import { initTextReplacements, loadTextReplacements, markTextReplacementSetsSaved, textReplacementSetsPatch } from './text-replacements';
 
 declare global {
   interface Window {
@@ -28,8 +28,7 @@ declare global {
       set: (patch: Partial<Settings>) => Promise<Settings>;
       saveActiveProfile: (profile: unknown, activeProfileId: unknown) => Promise<Settings>;
       setDirty: (dirty: boolean) => void;
-      importTextReplacements: () => Promise<TextReplacement[] | null>;
-      exportTextReplacements: (replacements: TextReplacement[]) => Promise<boolean>;
+      openTextReplacementsFolder: () => Promise<string>;
       openLogFile: () => Promise<void>;
       openUserDataFolder: () => Promise<void>;
       listModels: (baseURL: string, apiKey: string, type: string) => Promise<string[]>;
@@ -103,7 +102,7 @@ async function load(): Promise<void> {
     ]);
     loadProfiles(s);
     loadAppSettings(s, openAtLogin);
-    loadTextReplacements(s.textReplacements, markAppSettingsDirty);
+    loadTextReplacements(s, markAppSettingsDirty);
     loadPlaygroundProfiles(s);
     markClean();
   } catch (err) {
@@ -123,11 +122,12 @@ async function save(): Promise<void> {
       window.settingsAPI.set({
         ...profilesPatch(),
         ...appSettingsPatch(),
-        textReplacements: textReplacementsPatch()
+        ...textReplacementSetsPatch()
       }),
       window.settingsAPI.setLoginItem(openAtLoginValue())
     ]);
     loadPlaygroundProfiles(saved);
+    markTextReplacementSetsSaved(saved);
     if (currentProfileDirtyVersion() === profileVersion) {
       profileDirty = false;
       markProfileClean();

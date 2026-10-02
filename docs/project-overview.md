@@ -121,20 +121,35 @@ the global-shortcut dictation flow. Source: `src/renderer/settings/playground.ts
 
 ### Text replacements
 
-Settings → Text replacements stores rules in `settings.json`. Import and export
-use Spokenly's Word Replacements JSON array: `id`, `createdAt`, `isRegex`,
-`original`, `replacement`, and `timing`. Imported metadata is preserved on edit
-and export. `createdAt` uses seconds since 2001-01-01 for newly added rules.
-VentoType supports plain rules only; import rejects `isRegex: true` rather than
-silently changing its meaning. Timing metadata is preserved, but VentoType has
-no separate AI formatting stage, so all rules run after transcription.
+The Text replacements tab lists named rule sets in `data/text-replacements/` under
+Electron's userData folder. Each JSON file contains a UUID `id` and a
+`replacements` array. `default.json` is created empty on a fresh install.
+Migration 005 moves existing rules from `settings.json` into `default.json` and
+removes the old property. Files dropped into the folder without a UUID get one
+when discovered. The tab shows filenames, supports creating empty sets,
+dragging them into order, and toggling each set. The folder button opens the
+files for direct JSON editing. Import and export dialogs are no longer used.
+
+`data/text-replacements-metadata.json` stores the UUID order and each set's
+enabled state. Newly discovered files go at the end and are enabled by default.
+Every enabled set runs in order after transcription; the output of one set is
+input to the next. The app rescans the folder before typing, and Settings picks
+up external file changes when reopened. Missing-file UUIDs are pruned from
+metadata during the scan. Malformed rule set files are left untouched, skipped,
+and shown as errors in Settings so one bad file cannot stop the app from loading.
+Metadata for a malformed file with a known UUID is retained for when that file
+is repaired.
+
+Individual rules contain `original` and `replacement` text; their UUIDs are not
+needed. Older rules with Spokenly fields are accepted, but regex rules are
+rejected because VentoType cannot apply them as plain rules. All sets run after
+transcription.
 
 Matching ignores case, treats comma-separated source text as variants, and
 prefers longer phrases. Latin text respects word boundaries; Han characters
-can be replaced inside continuous Chinese text. App-wide rules run in one pass
-before typing or copying, so their output is not processed by another app-wide
-rule. Import replaces the editor list and requires Save changes before it
-affects dictation. VentoType's earlier versioned JSON export remains importable.
+can be replaced inside continuous Chinese text. Each rule set runs in one pass
+before typing or copying; within a set, output is not processed by another rule
+in the same set. Save changes applies order, enabled states, and new sets.
 
 Each connection profile also has its own ordered regex replacement list in
 `profiles.json`. A rule has a JavaScript regular expression pattern and replacement
