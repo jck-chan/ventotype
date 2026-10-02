@@ -52,9 +52,20 @@ private func emit(_ accelerator: String) {
 
 /// Accelerator name for a key press, in Electron's vocabulary. Letters, digits
 /// and Space only — fn already owns the arrows and the function row on a Mac.
+/// Stay in Core Graphics here: NSEvent's character translation can assert when
+/// called from the event tap's background thread and crash the whole app.
 private func keyName(_ event: CGEvent) -> String? {
-    guard let scalar = NSEvent(cgEvent: event)?.charactersIgnoringModifiers?.unicodeScalars.first
-    else { return nil }
+    var units = [UniChar](repeating: 0, count: 4)
+    var length = 0
+    units.withUnsafeMutableBufferPointer { buffer in
+        event.keyboardGetUnicodeString(
+            maxStringLength: buffer.count,
+            actualStringLength: &length,
+            unicodeString: buffer.baseAddress
+        )
+    }
+    guard length > 0, let scalar = String(utf16CodeUnits: units, count: min(length, units.count))
+        .unicodeScalars.first else { return nil }
     if scalar == " " { return "Space" }
     return CharacterSet.alphanumerics.contains(scalar) ? String(scalar).uppercased() : nil
 }
