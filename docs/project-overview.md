@@ -123,7 +123,8 @@ the global-shortcut dictation flow. Source: `src/renderer/settings/playground.ts
 
 The Text replacements tab lists named rule sets in `data/text-replacements/` under
 Electron's userData folder. Each JSON file contains a UUID `id` and a
-`replacements` array. `default.json` is created empty on a fresh install.
+`replacements` array. `default.json` is created with an identity
+`Hello world!` → `Hello world!` rule on a fresh install.
 Migration 005 moves existing rules from `settings.json` into `default.json` and
 removes the old property. Files dropped into the folder without a UUID get one
 when discovered. The tab shows filenames, supports creating empty sets,

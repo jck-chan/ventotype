@@ -48,7 +48,10 @@ export function readTextReplacementSets(
     a.localeCompare(b)
   );
   if (!paths.length) {
-    writeJsonAtomic(join(dir, 'default.json'), { id: randomUUID(), replacements: [] });
+    writeJsonAtomic(join(dir, 'default.json'), {
+      id: randomUUID(),
+      replacements: [{ original: 'Hello world!', replacement: 'Hello world!' }]
+    });
     paths.push('default.json');
   }
   const sets: TextReplacementSet[] = [];
