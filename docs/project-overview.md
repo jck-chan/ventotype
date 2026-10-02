@@ -140,16 +140,18 @@ and shown as errors in Settings so one bad file cannot stop the app from loading
 Metadata for a malformed file with a known UUID is retained for when that file
 is repaired.
 
-Individual rules contain `original` and `replacement` text; their UUIDs are not
-needed. Older rules with Spokenly fields are accepted, but regex rules are
-rejected because VentoType cannot apply them as plain rules. All sets run after
-transcription.
+Individual rules contain `original` and `replacement` text, with optional
+`isRegex: true` for a JavaScript regular expression; their UUIDs are not needed.
+Older rules with Spokenly fields are accepted. Regex rules replace every match
+with the `g` flag and support replacement tokens such as `$1`. Invalid patterns
+are reported as rule set errors. All sets run after transcription.
 
-Matching ignores case, treats comma-separated source text as variants, and
+Plain matching ignores case, treats comma-separated source text as variants, and
 prefers longer phrases. Latin text respects word boundaries; Han characters
-can be replaced inside continuous Chinese text. Each rule set runs in one pass
-before typing or copying; within a set, output is not processed by another rule
-in the same set. Save changes applies order, enabled states, and new sets.
+can be replaced inside continuous Chinese text. Adjacent plain rules run together
+in one pass, so their output is not processed by another plain rule in that
+group. Regex rules run in list order between those groups. Save changes applies
+order, enabled states, and new sets.
 
 Each connection profile also has its own ordered regex replacement list in
 `profiles.json`. A rule has a JavaScript regular expression pattern and replacement

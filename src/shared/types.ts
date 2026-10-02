@@ -52,6 +52,7 @@ export interface AppSettings {
 export interface TextReplacement {
   original: string;
   replacement: string;
+  isRegex?: boolean;
 }
 
 export interface TextReplacementSet {
