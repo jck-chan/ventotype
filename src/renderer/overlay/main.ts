@@ -1,5 +1,5 @@
 import { OverlayStatePayload, RecordOptions } from '@shared/types';
-import { COMPRESSED_AUDIO_BITS_PER_SECOND, encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
+import { COMPRESSED_AUDIO_BITS_PER_SECOND, encodeAsMp3, encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
 import { getMicrophoneStream } from '../shared/microphone';
 
 declare global {
@@ -32,7 +32,7 @@ let recorder: MediaRecorder | null = null;
 let chunks: Blob[] = [];
 let activeMimeType = 'audio/webm';
 let recordStartTime = 0;
-let recordOptions: RecordOptions = { encodeWav: false, useBuiltInMicOnly: true };
+let recordOptions: RecordOptions = { audioFormat: 'mp3', useBuiltInMicOnly: true };
 
 function showIcon(name: keyof typeof icons): void {
   for (const [key, el] of Object.entries(icons)) {
@@ -51,14 +51,14 @@ function triggerPopIn(): void {
 async function startRecording(options: RecordOptions): Promise<void> {
   chunks = [];
   recordStartTime = Date.now();
-  recordOptions = options ?? { encodeWav: false, useBuiltInMicOnly: true };
+  recordOptions = options ?? { audioFormat: 'mp3', useBuiltInMicOnly: true };
   try {
     const stream = await getMicrophoneStream(recordOptions.useBuiltInMicOnly);
     const mimeType = getSupportedRecordingMimeType();
     activeMimeType = mimeType;
 
     const recorderOptions: MediaRecorderOptions = mimeType ? { mimeType } : {};
-    if (!recordOptions.encodeWav) recorderOptions.audioBitsPerSecond = COMPRESSED_AUDIO_BITS_PER_SECOND;
+    if (recordOptions.audioFormat === 'webm') recorderOptions.audioBitsPerSecond = COMPRESSED_AUDIO_BITS_PER_SECOND;
     recorder = new MediaRecorder(stream, recorderOptions);
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunks.push(e.data);
@@ -86,7 +86,17 @@ async function finishRecording(): Promise<void> {
   let blob = new Blob(chunks, { type: activeMimeType });
   let mimeType = activeMimeType;
 
-  if (recordOptions.encodeWav && !mimeType.includes('wav')) {
+  if (recordOptions.audioFormat === 'mp3') {
+    try {
+      blob = await encodeAsMp3(blob);
+      mimeType = blob.type;
+    } catch (err) {
+      window.overlayAPI.sendError(`Could not encode MP3 audio: ${(err as Error).message}`);
+      recorder = null;
+      chunks = [];
+      return;
+    }
+  } else if (recordOptions.audioFormat === 'wav' && !mimeType.includes('wav')) {
     try {
       blob = await encodeAsWav(blob);
       mimeType = 'audio/wav';

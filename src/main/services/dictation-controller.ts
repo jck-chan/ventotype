@@ -47,7 +47,7 @@ export class DictationController extends EventEmitter {
       this.transcriber.warmUp();
       const settings = this.getSettings();
       this.emit('requestRecord', {
-        encodeWav: settings.audioFormat === 'wav',
+        audioFormat: settings.audioFormat,
         useBuiltInMicOnly: settings.useBuiltInMicOnly
       });
     } else if (this.state === 'recording') {

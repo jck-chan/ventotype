@@ -1,5 +1,5 @@
 import { ConnectionProfile, PlaygroundTranscribeResult, Settings } from '@shared/types';
-import { COMPRESSED_AUDIO_BITS_PER_SECOND, encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
+import { COMPRESSED_AUDIO_BITS_PER_SECOND, encodeAsMp3, encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
 import { getMicrophoneStream } from '../shared/microphone';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -35,7 +35,7 @@ let recorder: MediaRecorder | null = null;
 let recordedChunks: Blob[] = [];
 let recordStream: MediaStream | null = null;
 let recordMimeType = '';
-let audioFormat: Settings['audioFormat'] = 'webm';
+let audioFormat: Settings['audioFormat'] = 'mp3';
 let useBuiltInMicOnly = true;
 
 function showError(message: string): void {
@@ -114,12 +114,12 @@ async function stopRecording(): Promise<void> {
     return;
   }
 
-  if (audioFormat === 'wav') {
+  if (audioFormat === 'wav' || audioFormat === 'mp3') {
     try {
-      blob = await encodeAsWav(blob);
-      setClip(blob, 'audio/wav', 'In-app recording');
+      blob = audioFormat === 'wav' ? await encodeAsWav(blob) : await encodeAsMp3(blob);
+      setClip(blob, blob.type, 'In-app recording');
     } catch (err) {
-      showError((err as Error).message || 'Could not encode WAV audio.');
+      showError((err as Error).message || `Could not encode ${audioFormat.toUpperCase()} audio.`);
     }
   } else {
     setClip(blob, mimeType, 'In-app recording');
@@ -202,7 +202,7 @@ function formatRaw(raw: unknown): string {
 
 export function loadPlaygroundProfiles(s: Settings): void {
   profiles = s.profiles ?? [];
-  audioFormat = s.audioFormat ?? 'webm';
+  audioFormat = s.audioFormat ?? 'mp3';
   useBuiltInMicOnly = s.useBuiltInMicOnly ?? true;
   const previous = profileSelect.value;
   profileSelect.innerHTML = '';

@@ -37,7 +37,7 @@ export interface ProfileRegexReplacement {
 export interface AppSettings {
   toggleShortcut: string;
   cancelShortcut: string;
-  audioFormat: 'wav' | 'webm';
+  audioFormat: 'mp3' | 'wav' | 'webm';
   useBuiltInMicOnly: boolean;
   warmUpOnRecord: boolean;
   /**
@@ -96,7 +96,7 @@ const BASE_SETTINGS: Settings = {
   activeProfileId: DEFAULT_PROFILE.id,
   toggleShortcut: 'Control+H',
   cancelShortcut: 'Control+Shift+H',
-  audioFormat: 'webm',
+  audioFormat: 'mp3',
   useBuiltInMicOnly: true,
   warmUpOnRecord: false,
   copyToClipboard: false,
@@ -155,7 +155,7 @@ user dictionary: `;
 export const DEFAULT_CHAT_EXECUTION_MESSAGE = 'Please output the result.';
 
 export interface RecordOptions {
-  encodeWav: boolean;
+  audioFormat: AppSettings['audioFormat'];
   useBuiltInMicOnly: boolean;
 }
 

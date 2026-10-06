@@ -1,6 +1,6 @@
 /**
  * Browser-only audio helpers shared by the overlay recorder and the Settings
- * Playground tab. Both need to turn a MediaRecorder take into WAV for
+ * Playground tab. Both need to turn a MediaRecorder take into MP3 or WAV for
  * endpoints that reject WebM/Opus, and both need to know which mime type the
  * current Chromium build can actually record.
  */
@@ -10,14 +10,10 @@ export const WAV_SAMPLE_RATE = 16000;
 
 /** Target bitrate for compressed recordings sent to transcription endpoints. */
 export const COMPRESSED_AUDIO_BITS_PER_SECOND = 32_000;
+export const MP3_BITS_PER_SECOND = 64_000;
 
-/**
- * Re-encodes a browser-decodable audio blob as 16 kHz mono 16-bit PCM WAV.
- * MediaRecorder can't produce WAV directly, but Chromium can decode its own
- * WebM/Opus (and most other common formats), so the audio round-trips
- * through Web Audio when WAV is selected.
- */
-export async function encodeAsWav(blob: Blob): Promise<Blob> {
+/** Decode a MediaRecorder blob and resample it to 16 kHz mono. */
+async function decodeMonoSamples(blob: Blob): Promise<Float32Array> {
   const decodeCtx = new AudioContext();
   let decoded: AudioBuffer;
   try {
@@ -33,7 +29,11 @@ export async function encodeAsWav(blob: Blob): Promise<Blob> {
   source.buffer = decoded;
   source.connect(offline.destination);
   source.start();
-  const samples = (await offline.startRendering()).getChannelData(0);
+  return (await offline.startRendering()).getChannelData(0);
+}
+
+export async function encodeAsWav(blob: Blob): Promise<Blob> {
+  const samples = await decodeMonoSamples(blob);
 
   const dataSize = samples.length * 2;
   const bytes = new Uint8Array(44 + dataSize);
@@ -62,6 +62,30 @@ export async function encodeAsWav(blob: Blob): Promise<Blob> {
   }
 
   return new Blob([bytes], { type: 'audio/wav' });
+}
+
+/** Encode a recording as 16 kHz mono MP3 for broadly compatible, small uploads. */
+export async function encodeAsMp3(blob: Blob): Promise<Blob> {
+  const samples = await decodeMonoSamples(blob);
+  const { Mp3Encoder } = await import('@breezystack/lamejs');
+  const encoder = new Mp3Encoder(1, WAV_SAMPLE_RATE, MP3_BITS_PER_SECOND / 1000);
+  const chunks: BlobPart[] = [];
+  const frameSize = 1152;
+
+  for (let offset = 0; offset < samples.length; offset += frameSize) {
+    const frame = samples.subarray(offset, offset + frameSize);
+    const pcm = new Int16Array(frame.length);
+    for (let i = 0; i < frame.length; i++) {
+      const sample = Math.max(-1, Math.min(1, frame[i]));
+      pcm[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+    }
+    const encoded = encoder.encodeBuffer(pcm);
+    if (encoded.length) chunks.push(new Uint8Array(encoded));
+  }
+
+  const finalChunk = encoder.flush();
+  if (finalChunk.length) chunks.push(new Uint8Array(finalChunk));
+  return new Blob(chunks, { type: 'audio/mpeg' });
 }
 
 /** Best MediaRecorder mime type this Chromium build supports, or '' for the UA default. */

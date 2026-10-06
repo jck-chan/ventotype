@@ -38,7 +38,7 @@ src/renderer/
   overlay/                  — animated mic icon shown while recording
   settings/                 — settings UI, incl. the Playground tab (playground.ts)
   shared/                   — browser-only helpers shared by overlay + settings
-                              (audio.ts: WAV re-encode, recorder mime-type pick)
+                              (audio.ts: MP3/WAV encoding, recorder mime-type pick)
 src/shared/
   types.ts                  — Settings, DictationState, DEFAULT_SETTINGS
   ipc-channels.ts           — typed IPC channel names
@@ -99,11 +99,11 @@ this multipart field but currently ignores it. An empty field sends nothing;
 there's no `DEFAULT_TRANSCRIPTION_PROMPT`-style fallback. See `whisperPrompt()`
 vs `transcriptionPrompt()` in `transcriber.ts`.
 
-Settings → Behaviour offers WebM (the default, for smaller uploads) or WAV. The
-choice applies to all profile types. The overlay records with MediaRecorder,
-then re-encodes to 16 kHz mono WAV via Web Audio when WAV is selected. The
-`RecordOptions` passed with `dictation:start` carries that choice. WebM recordings
-in dictation and Playground target 32 kbps; the actual encoded rate may vary.
+Settings → Behaviour offers MP3 (the default), WebM, or WAV for every profile type.
+The overlay records with MediaRecorder. MP3 and WAV are re-encoded to 16 kHz mono
+after decoding the recording with Web Audio. MP3 targets 64 kbps; WebM recordings
+in dictation and Playground target 32 kbps. Actual encoded rates may vary. The
+`RecordOptions` passed with `dictation:start` carries the selected format.
 
 ## Playground tab
 

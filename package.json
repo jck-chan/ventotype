@@ -62,6 +62,7 @@
   },
   "dependencies": {
     "@ai-sdk/gateway": "^4.0.103",
+    "@breezystack/lamejs": "^1.2.7",
     "ai": "^7.0.127",
     "koffi": "^3.1.6"
   }

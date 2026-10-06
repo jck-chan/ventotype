@@ -157,7 +157,7 @@ export function initAppSettings(onDirty: () => void): void {
 export function loadAppSettings(s: Settings, openAtLogin: boolean): void {
   fields.toggleShortcut.value = s.toggleShortcut ?? '';
   fields.cancelShortcut.value = s.cancelShortcut ?? '';
-  fields.audioFormat.value = s.audioFormat ?? 'webm';
+  fields.audioFormat.value = s.audioFormat ?? 'mp3';
   fields.useBuiltInMicOnly.checked = s.useBuiltInMicOnly ?? true;
   fields.warmUpOnRecord.checked = s.warmUpOnRecord ?? true;
   fields.copyToClipboard.checked = s.copyToClipboard ?? false;
