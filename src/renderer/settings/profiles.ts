@@ -55,10 +55,13 @@ const addProfileReplacementBtn = $<HTMLButtonElement>('addProfileReplacement');
 
 const OPENAI_BASE_URL = 'https://api.openai.com/v1';
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+const VERCEL_BASE_URL = 'https://ai-gateway.vercel.sh/v4/ai';
 
 const BASE_URL_PRESETS: Record<EndpointType, readonly string[]> = {
   'openai-transcribe': [OPENAI_BASE_URL, OPENROUTER_BASE_URL],
-  'openai-chat': [OPENAI_BASE_URL, OPENROUTER_BASE_URL]
+  'openai-chat': [OPENAI_BASE_URL, OPENROUTER_BASE_URL],
+  'vercel-transcribe': [VERCEL_BASE_URL],
+  'vercel-chat': [VERCEL_BASE_URL]
 };
 
 let profiles: ConnectionProfile[] = [];
@@ -200,10 +203,10 @@ function validateProfileReplacementRows(): boolean {
  * The execution message goes with the audio, so it only applies to chat profiles.
  */
 function syncPromptGuidance(): void {
-  const isChat = fields.endpointType.value === 'openai-chat';
+  const isChat = fields.endpointType.value === 'openai-chat' || fields.endpointType.value === 'vercel-chat';
   fields.prompt.placeholder = isChat ? DEFAULT_TRANSCRIPTION_PROMPT : '';
   promptHint.textContent = isChat
-    ? 'Sent as the system message on every request. Leave empty to use the built-in prompt. A reply wrapped in <|t|> tags is unwrapped before typing.'
+    ? 'Sent as the transcription instructions on every request. Leave empty to use the built-in prompt. A reply wrapped in <|t|> tags is unwrapped before typing.'
     : 'Optional vocabulary hint for Whisper — proper nouns, acronyms, or jargon likely to appear. Leave empty to send none.';
   executionMessageField.classList.toggle('hidden', !isChat);
   fields.executionMessage.placeholder = DEFAULT_CHAT_EXECUTION_MESSAGE;
@@ -220,7 +223,8 @@ function syncPromptGuidance(): void {
 function effectivePrompt(): string {
   const typed = fields.prompt.value.trim();
   if (typed) return typed;
-  return fields.endpointType.value === 'openai-chat' ? DEFAULT_TRANSCRIPTION_PROMPT : '';
+  return fields.endpointType.value === 'openai-chat' || fields.endpointType.value === 'vercel-chat'
+    ? DEFAULT_TRANSCRIPTION_PROMPT : '';
 }
 
 /** A Whisper-style profile with an empty field sends nothing — so there's nothing to copy. */
@@ -716,11 +720,6 @@ export function initProfiles(
   });
 
   fields.endpointType.addEventListener('change', () => {
-    const type = fields.endpointType.value as EndpointType;
-    const knownModels = Object.values(DEFAULT_MODELS);
-    if (!fields.model.value.trim() || knownModels.includes(fields.model.value.trim())) {
-      fields.model.value = DEFAULT_MODELS[type];
-    }
     hideURLDropdown();
     allModels = [];
     hideDropdown();

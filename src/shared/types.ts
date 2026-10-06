@@ -1,5 +1,5 @@
 /** How the transcription request is encoded for a given provider. */
-export type EndpointType = 'openai-transcribe' | 'openai-chat';
+export type EndpointType = 'openai-transcribe' | 'openai-chat' | 'vercel-transcribe' | 'vercel-chat';
 
 /** A saved connection to a Whisper-compatible endpoint. */
 export interface ConnectionProfile {
@@ -127,7 +127,9 @@ export const DEFAULT_SETTINGS: Settings = { ...BASE_SETTINGS };
 export const DEFAULT_MODELS: Record<EndpointType, string> = {
   'openai-transcribe':     'whisper-1',
   // No default model — any multimodal chat model will do, so leave the pick to the user.
-  'openai-chat':           ''
+  'openai-chat':           '',
+  'vercel-transcribe':     'openai/whisper-1',
+  'vercel-chat':           ''
 };
 
 /** Used by `openai-chat` profiles that leave the prompt field empty. */

@@ -8,6 +8,9 @@
 /** Speech models resample to this anyway, and it keeps the base64 payload small. */
 export const WAV_SAMPLE_RATE = 16000;
 
+/** Target bitrate for compressed recordings sent to transcription endpoints. */
+export const COMPRESSED_AUDIO_BITS_PER_SECOND = 32_000;
+
 /**
  * Re-encodes a browser-decodable audio blob as 16 kHz mono 16-bit PCM WAV.
  * MediaRecorder can't produce WAV directly, but Chromium can decode its own

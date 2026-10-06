@@ -1,5 +1,5 @@
 import { ConnectionProfile, PlaygroundTranscribeResult, Settings } from '@shared/types';
-import { encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
+import { COMPRESSED_AUDIO_BITS_PER_SECOND, encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
 import { getMicrophoneStream } from '../shared/microphone';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -76,7 +76,9 @@ async function startRecording(): Promise<void> {
 
   recordedChunks = [];
   recordMimeType = getSupportedRecordingMimeType();
-  recorder = new MediaRecorder(recordStream, recordMimeType ? { mimeType: recordMimeType } : undefined);
+  const recorderOptions: MediaRecorderOptions = recordMimeType ? { mimeType: recordMimeType } : {};
+  if (audioFormat === 'webm') recorderOptions.audioBitsPerSecond = COMPRESSED_AUDIO_BITS_PER_SECOND;
+  recorder = new MediaRecorder(recordStream, recorderOptions);
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) recordedChunks.push(e.data);
   };

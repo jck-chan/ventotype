@@ -33,6 +33,16 @@ async function listOpenRouterModels(baseURL: string, apiKey: string): Promise<st
   return (data.data ?? []).map((m: { id: string }) => m.id).sort();
 }
 
+async function listVercelModels(baseURL: string, type: EndpointType): Promise<string[]> {
+  const url = new URL('/v1/models', baseURL);
+  // The model catalog is public. Sending an invalid profile key makes it return 401.
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json() as { data?: { id: string; type?: string }[] };
+  const modelType = type === 'vercel-transcribe' ? 'transcription' : 'language';
+  return (data.data ?? []).filter((model) => model.type === modelType).map((model) => model.id).sort();
+}
+
 function isOpenRouterBaseURL(baseURL: string): boolean {
   try {
     return new URL(baseURL).hostname.toLowerCase() === 'openrouter.ai';
@@ -122,6 +132,9 @@ export function registerIpcHandlers(
   ipcMain.handle(
     IPC.Api.ListModels,
     async (_e: IpcMainInvokeEvent, baseURL: string, apiKey: string, type: EndpointType) => {
+      if (type === 'vercel-transcribe' || type === 'vercel-chat') {
+        return listVercelModels(baseURL, type);
+      }
       if (type === 'openai-transcribe' && isOpenRouterBaseURL(baseURL)) {
         return listOpenRouterModels(baseURL, apiKey);
       }

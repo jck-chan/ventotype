@@ -1,5 +1,5 @@
 import { OverlayStatePayload, RecordOptions } from '@shared/types';
-import { encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
+import { COMPRESSED_AUDIO_BITS_PER_SECOND, encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
 import { getMicrophoneStream } from '../shared/microphone';
 
 declare global {
@@ -57,7 +57,9 @@ async function startRecording(options: RecordOptions): Promise<void> {
     const mimeType = getSupportedRecordingMimeType();
     activeMimeType = mimeType;
 
-    recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    const recorderOptions: MediaRecorderOptions = mimeType ? { mimeType } : {};
+    if (!recordOptions.encodeWav) recorderOptions.audioBitsPerSecond = COMPRESSED_AUDIO_BITS_PER_SECOND;
+    recorder = new MediaRecorder(stream, recorderOptions);
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunks.push(e.data);
     };

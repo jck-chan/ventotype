@@ -49,14 +49,18 @@ src/shared/
 ## Connection types
 
 A profile's `type` decides how the audio is sent; the base URL chooses the provider.
-Both types use the same connection fields (base URL, API key, model, language, prompt).
+All types use the same connection fields (base URL, API key, model, language, prompt).
 
 | Type | Endpoint | Request | Notes |
 | --- | --- | --- | --- |
 | `openai-transcribe` | `/audio/transcriptions` | multipart form-data | OpenAI, OpenRouter, OASR, and other compatible servers |
 | `openai-chat` | `/chat/completions` | JSON, base64 `input_audio` content part | Multimodal chat models |
+| `vercel-transcribe` | `/v4/ai/transcription-model` | Vercel AI SDK | Whisper and other Vercel transcription models |
+| `vercel-chat` | `/v4/ai/language-model` | Vercel AI SDK | Chat-completion-style connection; dictation sends audio with its user message |
 
-OpenRouter supports [OpenAI-compatible multipart transcription requests](https://openrouter.ai/docs/guides/overview/multimodal/stt), so it uses the shared `openai-transcribe` type. Migration 003 changes saved `openrouter-transcribe` profiles to that type while preserving each profile's URL, key, model, and other fields. Base URL presets never replace a typed value; the user selects a suggestion from the dropdown.
+The Vercel types use `https://ai-gateway.vercel.sh/v4/ai` as their base URL and a Vercel AI Gateway key. Vercel's OpenAI-compatible `/v1` surface does not support the audio requests used here. The app uses `ai` and `@ai-sdk/gateway` for these profiles; the existing OpenAI-compatible types keep their current transport. Model refresh reads the public `/v1/models` catalog without sending the profile key and filters Vercel's `type` field to transcription or language models. Select a language model that accepts audio for dictation through the chat-completions-style connection.
+
+OpenRouter supports [OpenAI-compatible multipart transcription requests](https://openrouter.ai/docs/guides/overview/multimodal/stt), so it uses the shared `openai-transcribe` type. Migration 003 changes saved `openrouter-transcribe` profiles to that type while preserving each profile's URL, key, model, and other fields. Changing a connection type does not change the base URL or model fields; the user selects suggestions from their dropdowns.
 
 Model refresh uses OpenRouter's `GET /models?output_modalities=transcription` for its base URL. OpenAI's `GET /models` has no capability filter, so the app keeps the documented file-transcription model family from that response. Other compatible servers keep their full model lists because their model IDs and capability metadata vary.
 
@@ -98,7 +102,8 @@ vs `transcriptionPrompt()` in `transcriber.ts`.
 Settings → Behaviour offers WebM (the default, for smaller uploads) or WAV. The
 choice applies to all profile types. The overlay records with MediaRecorder,
 then re-encodes to 16 kHz mono WAV via Web Audio when WAV is selected. The
-`RecordOptions` passed with `dictation:start` carries that choice.
+`RecordOptions` passed with `dictation:start` carries that choice. WebM recordings
+in dictation and Playground target 32 kbps; the actual encoded rate may vary.
 
 ## Playground tab
 

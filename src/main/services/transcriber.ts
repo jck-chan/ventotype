@@ -9,6 +9,8 @@ import {
   Settings
 } from '@shared/types';
 import { log } from './logger';
+import { createGateway } from '@ai-sdk/gateway';
+import { generateText, transcribe as transcribeAudio } from 'ai';
 
 export interface TranscribeInput {
   audio: ArrayBuffer;
@@ -18,8 +20,14 @@ export interface TranscribeInput {
 /** Log tag and user-facing name per endpoint type — chat calls aren't Whisper calls. */
 const API_LABEL: Record<EndpointType, { tag: string; name: string }> = {
   'openai-transcribe':     { tag: 'whisper', name: 'Whisper API' },
-  'openai-chat':           { tag: 'chat',    name: 'Chat API' }
+  'openai-chat':           { tag: 'chat',    name: 'Chat API' },
+  'vercel-transcribe':     { tag: 'vercel-stt', name: 'Vercel transcription' },
+  'vercel-chat':           { tag: 'vercel-chat', name: 'Vercel chat completions' }
 };
+
+function isChatType(type: EndpointType): boolean {
+  return type === 'openai-chat' || type === 'vercel-chat';
+}
 
 export class Transcriber {
   constructor(private readonly getSettings: () => Settings) {}
@@ -49,7 +57,7 @@ export class Transcriber {
 
     if (!response.ok) {
       const body = await safeText(response);
-      if (profile.type === 'openai-chat' && isEmptyCompletionError(response.status, body)) {
+      if (isChatType(profile.type) && isEmptyCompletionError(response.status, body)) {
         log.info(`[${tag}] ← ${response.status} (model returned nothing)  (${elapsed}ms)  0 chars`);
         return '';
       }
@@ -59,7 +67,7 @@ export class Transcriber {
 
     const payload = (await response.json()) as TranscriptionPayload;
     const text =
-      profile.type === 'openai-chat' ? chatText(payload) : (payload.text ?? '').trim();
+      isChatType(profile.type) ? chatText(payload) : (payload.text ?? '').trim();
 
     log.info(`[${tag}] ← ${response.status} OK  (${elapsed}ms)  ${text.length} chars`);
     return text;
@@ -87,7 +95,7 @@ export class Transcriber {
     }
 
     const text = response.ok
-      ? profile.type === 'openai-chat'
+      ? isChatType(profile.type)
         ? chatText(raw as TranscriptionPayload)
         : ((raw as TranscriptionPayload)?.text ?? '').trim()
       : '';
@@ -110,6 +118,9 @@ export class Transcriber {
     mimeType: string,
     signal?: AbortSignal
   ): Promise<{ response: Response; elapsed: number; endpoint: string }> {
+    if (profile.type === 'vercel-transcribe' || profile.type === 'vercel-chat') {
+      return this.postVercel(profile, audioData, mimeType, signal);
+    }
     const base     = profile.baseURL.replace(/\/$/, '');
     const model    = profile.model || DEFAULT_MODELS[profile.type];
     const language = profile.language || undefined;
@@ -169,6 +180,69 @@ export class Transcriber {
     });
 
     return { response, elapsed: Date.now() - t0, endpoint };
+  }
+
+  /** Vercel audio uses the AI SDK transport, not its OpenAI-compatible /v1 routes. */
+  private async postVercel(
+    profile: ConnectionProfile,
+    audioData: Uint8Array | ArrayBuffer,
+    mimeType: string,
+    signal?: AbortSignal
+  ): Promise<{ response: Response; elapsed: number; endpoint: string }> {
+    const gateway = createGateway({ apiKey: profile.apiKey, baseURL: profile.baseURL.replace(/\/$/, '') });
+    const chat = profile.type === 'vercel-chat';
+    const model = profile.model || DEFAULT_MODELS[profile.type];
+    const endpoint = `${profile.baseURL.replace(/\/$/, '')}/${chat ? 'language-model' : 'transcription-model'}`;
+    const audio = audioData instanceof Uint8Array ? audioData : new Uint8Array(audioData);
+    const t0 = Date.now();
+    log.info(`[${API_LABEL[profile.type].tag}] → ${endpoint}  model: ${model}  |  fmt: ${mimeType}  |  size: ${(audio.byteLength / 1024).toFixed(1)} KB`);
+
+    try {
+      if (chat) {
+        const result = await generateText({
+          model: gateway(model),
+          instructions: transcriptionPrompt(profile),
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: chatExecutionMessage(profile) },
+              { type: 'file', data: audio, mediaType: mimeType }
+            ]
+          }],
+          abortSignal: signal
+        });
+        return {
+          response: Response.json({ choices: [{ message: { content: result.text } }], gatewayResponse: result.response.body }),
+          elapsed: Date.now() - t0,
+          endpoint
+        };
+      }
+
+      const language = profile.language?.trim();
+      const prompt = whisperPrompt(profile);
+      const result = await transcribeAudio({
+        model: gateway.transcriptionModel(model),
+        audio,
+        ...(model.startsWith('openai/') && (language || prompt) ? {
+          providerOptions: { openai: { ...(language ? { language } : {}), ...(prompt ? { prompt } : {}) } }
+        } : {}),
+        abortSignal: signal
+      });
+      return {
+        response: Response.json({ text: result.text, language: result.language, durationInSeconds: result.durationInSeconds }),
+        elapsed: Date.now() - t0,
+        endpoint
+      };
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      const failure = error as { statusCode?: number; message?: string };
+      const status = failure.statusCode && failure.statusCode >= 400 && failure.statusCode <= 599 ? failure.statusCode : 502;
+      return {
+        response: Response.json({ error: { message: failure.message ?? String(error) } }, { status }),
+        elapsed: Date.now() - t0,
+        endpoint
+      };
+    }
   }
 }
 
