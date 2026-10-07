@@ -1,6 +1,6 @@
 import { OverlayStatePayload, RecordOptions } from '@shared/types';
-import { COMPRESSED_AUDIO_BITS_PER_SECOND, encodeAsMp3, encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
 import { getMicrophoneStream } from '../shared/microphone';
+import { AudioRecording, startAudioRecording } from '../shared/recording';
 
 declare global {
   interface Window {
@@ -28,9 +28,8 @@ const icons: Record<string, HTMLElement | null> = {
 };
 
 // ── Audio recording state ─────────────────────────────────────────────────────
-let recorder: MediaRecorder | null = null;
-let chunks: Blob[] = [];
-let activeMimeType = 'audio/webm';
+let recorder: AudioRecording | null = null;
+let recordStream: MediaStream | null = null;
 let recordStartTime = 0;
 let recordOptions: RecordOptions = { audioFormat: 'mp3', useBuiltInMicOnly: true };
 
@@ -49,25 +48,14 @@ function triggerPopIn(): void {
 
 // ── Recording helpers ─────────────────────────────────────────────────────────
 async function startRecording(options: RecordOptions): Promise<void> {
-  chunks = [];
   recordStartTime = Date.now();
   recordOptions = options ?? { audioFormat: 'mp3', useBuiltInMicOnly: true };
   try {
-    const stream = await getMicrophoneStream(recordOptions.useBuiltInMicOnly);
-    const mimeType = getSupportedRecordingMimeType();
-    activeMimeType = mimeType;
-
-    const recorderOptions: MediaRecorderOptions = mimeType ? { mimeType } : {};
-    if (recordOptions.audioFormat === 'webm') recorderOptions.audioBitsPerSecond = COMPRESSED_AUDIO_BITS_PER_SECOND;
-    recorder = new MediaRecorder(stream, recorderOptions);
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-    recorder.onerror = (e) => {
-      window.overlayAPI.sendError((e as ErrorEvent).message ?? 'Recorder error');
-    };
-    recorder.start(100); // collect chunks every 100ms
+    recordStream = await getMicrophoneStream(recordOptions.useBuiltInMicOnly);
+    recorder = await startAudioRecording(recordStream, recordOptions.audioFormat);
   } catch (err) {
+    recordStream?.getTracks().forEach((track) => track.stop());
+    recordStream = null;
     const msg = (err as Error).message || 'Microphone access denied.';
     window.overlayAPI.sendError(msg);
   }
@@ -75,61 +63,30 @@ async function startRecording(options: RecordOptions): Promise<void> {
 
 /** Stop the mic, build blob, send to main for transcription. */
 async function finishRecording(): Promise<void> {
-  if (!recorder || recorder.state === 'inactive') return;
-
-  await new Promise<void>((resolve) => {
-    recorder!.onstop = () => resolve();
-    recorder!.stop();
-    recorder!.stream.getTracks().forEach((t) => t.stop());
-  });
-
-  let blob = new Blob(chunks, { type: activeMimeType });
-  let mimeType = activeMimeType;
-
-  if (recordOptions.audioFormat === 'mp3') {
-    try {
-      blob = await encodeAsMp3(blob);
-      mimeType = blob.type;
-    } catch (err) {
-      window.overlayAPI.sendError(`Could not encode MP3 audio: ${(err as Error).message}`);
-      recorder = null;
-      chunks = [];
-      return;
-    }
-  } else if (recordOptions.audioFormat === 'wav' && !mimeType.includes('wav')) {
-    try {
-      blob = await encodeAsWav(blob);
-      mimeType = 'audio/wav';
-    } catch (err) {
-      // Ship the raw recording anyway — the endpoint's own error is more useful
-      // to the user than swallowing the take.
-      console.error('[overlay] WAV re-encode failed', err);
-    }
-  }
-
-  const buffer = await blob.arrayBuffer();
-  const durationMs = Date.now() - recordStartTime;
-  window.overlayAPI.sendAudio(buffer, mimeType, durationMs);
+  if (!recorder) return;
+  const active = recorder;
   recorder = null;
-  chunks = [];
+  try {
+    const blob = await active.stop();
+    if (!blob.size) throw new Error('No audio captured.');
+    const buffer = await blob.arrayBuffer();
+    window.overlayAPI.sendAudio(buffer, blob.type, Date.now() - recordStartTime);
+  } finally {
+    recordStream?.getTracks().forEach((track) => track.stop());
+    recordStream = null;
+  }
 }
 
 /** Stop the mic and discard audio — cancel shortcut; no transcription. */
 async function cancelRecording(): Promise<void> {
-  if (!recorder || recorder.state === 'inactive') {
-    recorder = null;
-    chunks = [];
-    return;
-  }
-
-  await new Promise<void>((resolve) => {
-    recorder!.onstop = () => resolve();
-    recorder!.stop();
-    recorder!.stream.getTracks().forEach((t) => t.stop());
-  });
-
+  const active = recorder;
   recorder = null;
-  chunks = [];
+  try {
+    await active?.cancel();
+  } finally {
+    recordStream?.getTracks().forEach((track) => track.stop());
+    recordStream = null;
+  }
 }
 
 // ── IPC listeners ─────────────────────────────────────────────────────────────

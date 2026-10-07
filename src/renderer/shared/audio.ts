@@ -1,40 +1,27 @@
-/**
- * Browser-only audio helpers shared by the overlay recorder and the Settings
- * Playground tab. Both need to turn a MediaRecorder take into MP3 or WAV for
- * endpoints that reject WebM/Opus, and both need to know which mime type the
- * current Chromium build can actually record.
- */
+/** Audio encoding helpers shared by dictation and Playground. */
 
 /** Speech models resample to this anyway, and it keeps the base64 payload small. */
-export const WAV_SAMPLE_RATE = 16000;
+export const AUDIO_SAMPLE_RATE = 16000;
 
 /** Target bitrate for compressed recordings sent to transcription endpoints. */
 export const COMPRESSED_AUDIO_BITS_PER_SECOND = 32_000;
 export const MP3_BITS_PER_SECOND = 64_000;
 
-/** Decode a MediaRecorder blob and resample it to 16 kHz mono. */
-async function decodeMonoSamples(blob: Blob): Promise<Float32Array> {
-  const decodeCtx = new AudioContext();
-  let decoded: AudioBuffer;
-  try {
-    decoded = await decodeCtx.decodeAudioData(await blob.arrayBuffer());
-  } finally {
-    void decodeCtx.close();
-  }
-
-  // Rendering into a 1-channel context downmixes and resamples in one pass.
-  const frames = Math.max(1, Math.round((decoded.length * WAV_SAMPLE_RATE) / decoded.sampleRate));
-  const offline = new OfflineAudioContext(1, frames, WAV_SAMPLE_RATE);
+/** Resample captured microphone PCM without passing through a lossy codec. */
+export async function resampleMono(samples: Float32Array, sourceRate: number): Promise<Float32Array> {
+  if (sourceRate === AUDIO_SAMPLE_RATE) return samples;
+  const buffer = new AudioBuffer({ length: samples.length, numberOfChannels: 1, sampleRate: sourceRate });
+  buffer.copyToChannel(new Float32Array(samples), 0);
+  const frames = Math.max(1, Math.round(samples.length * AUDIO_SAMPLE_RATE / sourceRate));
+  const offline = new OfflineAudioContext(1, frames, AUDIO_SAMPLE_RATE);
   const source = offline.createBufferSource();
-  source.buffer = decoded;
+  source.buffer = buffer;
   source.connect(offline.destination);
   source.start();
   return (await offline.startRendering()).getChannelData(0);
 }
 
-export async function encodeAsWav(blob: Blob): Promise<Blob> {
-  const samples = await decodeMonoSamples(blob);
-
+export function encodeAsWav(samples: Float32Array): Blob {
   const dataSize = samples.length * 2;
   const bytes = new Uint8Array(44 + dataSize);
   const view = new DataView(bytes.buffer);
@@ -49,8 +36,8 @@ export async function encodeAsWav(blob: Blob): Promise<Blob> {
   view.setUint32(16, 16, true);
   view.setUint16(20, 1, true);                      // PCM
   view.setUint16(22, 1, true);                      // mono
-  view.setUint32(24, WAV_SAMPLE_RATE, true);
-  view.setUint32(28, WAV_SAMPLE_RATE * 2, true);    // byte rate
+  view.setUint32(24, AUDIO_SAMPLE_RATE, true);
+  view.setUint32(28, AUDIO_SAMPLE_RATE * 2, true);  // byte rate
   view.setUint16(32, 2, true);                      // block align
   view.setUint16(34, 16, true);                     // bits/sample
   ascii(36, 'data');
@@ -65,10 +52,9 @@ export async function encodeAsWav(blob: Blob): Promise<Blob> {
 }
 
 /** Encode a recording as 16 kHz mono MP3 for broadly compatible, small uploads. */
-export async function encodeAsMp3(blob: Blob): Promise<Blob> {
-  const samples = await decodeMonoSamples(blob);
+export async function encodeAsMp3(samples: Float32Array): Promise<Blob> {
   const { Mp3Encoder } = await import('@breezystack/lamejs');
-  const encoder = new Mp3Encoder(1, WAV_SAMPLE_RATE, MP3_BITS_PER_SECOND / 1000);
+  const encoder = new Mp3Encoder(1, AUDIO_SAMPLE_RATE, MP3_BITS_PER_SECOND / 1000);
   const chunks: BlobPart[] = [];
   const frameSize = 1152;
 

@@ -1,6 +1,6 @@
 import { ConnectionProfile, TranscribeResult, Settings } from '@shared/types';
-import { COMPRESSED_AUDIO_BITS_PER_SECOND, encodeAsMp3, encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
 import { getMicrophoneStream } from '../shared/microphone';
+import { AudioRecording, startAudioRecording } from '../shared/recording';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
@@ -31,10 +31,8 @@ let clipMimeType = '';
 let clipObjectUrl: string | null = null;
 let lastRaw: unknown = null;
 
-let recorder: MediaRecorder | null = null;
-let recordedChunks: Blob[] = [];
+let recorder: AudioRecording | null = null;
 let recordStream: MediaStream | null = null;
-let recordMimeType = '';
 let audioFormat: Settings['audioFormat'] = 'mp3';
 let useBuiltInMicOnly = true;
 
@@ -74,60 +72,39 @@ async function startRecording(): Promise<void> {
     return;
   }
 
-  recordedChunks = [];
-  recordMimeType = getSupportedRecordingMimeType();
-  const recorderOptions: MediaRecorderOptions = recordMimeType ? { mimeType: recordMimeType } : {};
-  if (audioFormat === 'webm') recorderOptions.audioBitsPerSecond = COMPRESSED_AUDIO_BITS_PER_SECOND;
-  recorder = new MediaRecorder(recordStream, recorderOptions);
-  recorder.ondataavailable = (e) => {
-    if (e.data.size > 0) recordedChunks.push(e.data);
-  };
-  recorder.onerror = (e) => {
-    showError((e as ErrorEvent).message ?? 'Recorder error.');
-  };
-  recorder.start(100);
+  try {
+    recorder = await startAudioRecording(recordStream, audioFormat);
+  } catch (err) {
+    recordStream.getTracks().forEach((track) => track.stop());
+    recordStream = null;
+    showError((err as Error).message || 'Could not start recording.');
+    return;
+  }
 
   recordBtn.classList.add('recording');
   recordLabel.textContent = 'Stop';
 }
 
 async function stopRecording(): Promise<void> {
-  if (!recorder || recorder.state === 'inactive') return;
-
-  await new Promise<void>((resolve) => {
-    recorder!.onstop = () => resolve();
-    recorder!.stop();
-  });
-
-  recordStream?.getTracks().forEach((t) => t.stop());
-  recordStream = null;
+  if (!recorder) return;
+  const active = recorder;
+  recorder = null;
   recordBtn.classList.remove('recording');
   recordLabel.textContent = 'Record';
-
-  const mimeType = recordMimeType || 'audio/webm';
-  let blob = new Blob(recordedChunks, { type: mimeType });
-  recordedChunks = [];
-  recorder = null;
-
-  if (blob.size === 0) {
-    showError('No audio captured.');
-    return;
-  }
-
-  if (audioFormat === 'wav' || audioFormat === 'mp3') {
-    try {
-      blob = audioFormat === 'wav' ? await encodeAsWav(blob) : await encodeAsMp3(blob);
-      setClip(blob, blob.type, 'In-app recording');
-    } catch (err) {
-      showError((err as Error).message || `Could not encode ${audioFormat.toUpperCase()} audio.`);
-    }
-  } else {
-    setClip(blob, mimeType, 'In-app recording');
+  try {
+    const blob = await active.stop();
+    if (!blob.size) throw new Error('No audio captured.');
+    setClip(blob, blob.type, 'In-app recording');
+  } catch (err) {
+    showError((err as Error).message || 'Could not finish recording.');
+  } finally {
+    recordStream?.getTracks().forEach((track) => track.stop());
+    recordStream = null;
   }
 }
 
 function toggleRecording(): void {
-  if (recorder && recorder.state !== 'inactive') stopRecording();
+  if (recorder) stopRecording();
   else startRecording();
 }
 
