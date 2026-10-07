@@ -69,7 +69,7 @@ export class Transcriber {
     const text =
       isChatType(profile.type) ? chatText(payload) : (payload.text ?? '').trim();
 
-    log.info(`[${tag}] ← ${response.status} OK  (${elapsed}ms)  ${text.length} chars`);
+    log.info(`[${tag}] ← ${response.status} OK  (${elapsed}ms)  ${text.length} chars\n`);
     return text;
   }
 
