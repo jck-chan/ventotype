@@ -124,7 +124,12 @@ export function initTextReplacements(
       return;
     }
     const filename = nextUntitledFilename();
-    sets.push({ id: crypto.randomUUID(), filename, enabled: true, replacements: [] });
+    sets.push({
+      id: crypto.randomUUID(),
+      filename,
+      enabled: true,
+      replacements: [{ original: 'Hello world!', replacement: 'Hello world!', isRegex: false }]
+    });
     unavailableFilenames.add(filename.toLocaleLowerCase());
     renderSets();
     onDirty();
