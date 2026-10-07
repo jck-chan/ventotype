@@ -80,7 +80,8 @@ export class DictationController extends EventEmitter {
     const abort = new AbortController();
     this.transcribeAbort = abort;
     try {
-      const text = await this.transcriber.transcribe({ audio, mimeType }, abort.signal);
+      const { text } = await this.transcriber.transcribe(
+        { audio, mimeType }, profile, { signal: abort.signal, throwOnError: true });
       // A cancel that landed while the reply was on the wire: cancel() already
       // put us back to idle, so don't type what came back.
       if (abort.signal.aborted) return;

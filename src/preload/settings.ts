@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   setDirty: (dirty: boolean) => ipcRenderer.send('settings:set-dirty', dirty),
   openTextReplacementsFolder: () => ipcRenderer.invoke('text-replacements:open-folder'),
   createTextReplacementSet: () => ipcRenderer.invoke('text-replacements:create-set'),
-  refreshTextReplacementSets: () => ipcRenderer.send('text-replacements:refresh'),
+  refreshTextReplacementSets: () => ipcRenderer.invoke('text-replacements:refresh'),
   openLogFile: () => ipcRenderer.invoke('shell:open-log-file'),
   openUserDataFolder: () => ipcRenderer.invoke('shell:open-user-data-folder'),
   listModels: (baseURL: string, apiKey: string, type: string) =>

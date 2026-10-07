@@ -114,10 +114,10 @@ the global-shortcut dictation flow. Source: `src/renderer/settings/playground.ts
   or drop/browse an existing audio file.
 - **Profile picker** — a plain `<select>` over the saved profile list (not the in-progress
   edits on the Profiles tab — press Command+S on macOS or Control+S elsewhere first to test unsaved changes).
-- **Send** — `Transcriber.transcribeInspect()` (`src/main/services/transcriber.ts`) runs
-  the request against the chosen profile and, unlike the production `transcribe()` path,
-  never throws for a non-2xx reply — `PlaygroundTranscribeResult` carries `ok`/`status`/
-  `raw` either way, since inspecting exactly what the server sent back is the point.
+- **Send** — `Transcriber.transcribe()` (`src/main/services/transcriber.ts`) runs
+  the request against the chosen profile and returns `TranscribeResult` with
+  `text`, `ok`, `status`, and `raw`. Playground keeps non-2xx replies for inspection;
+  background dictation requests strict errors and uses the returned `text`.
 - **Raw JSON** — the response body, pretty-printed in a dialog, with a Copy button.
 - IPC: `playground:transcribe` (`IPC.Playground.Transcribe`), handled in `src/main/ipc.ts`
   by looking up the chosen profile from `SettingsStore` and delegating to the transcriber.
@@ -140,10 +140,10 @@ files for direct JSON editing. Import and export dialogs are no longer used.
 `data/text-replacements-metadata.json` stores the UUID order and each set's
 enabled state. Newly discovered files go at the end and are enabled by default.
 Every enabled set runs in order after transcription; the output of one set is
-input to the next. The app starts a rule-set scan alongside recording in both
-background dictation and Playground. Typing uses the latest completed scan;
-scan duration is logged for each recording start. Settings picks
-up external file changes every 1.5 seconds while the tab is open. Missing-file UUIDs are pruned from
+input to the next. The app loads rule sets at startup, then rescans only when
+the Text replacements tab opens and every 1.5 seconds while it stays open.
+Newly loaded changes show a brief toast. Dictation and Playground use the
+cached rules. Missing-file UUIDs are pruned from
 metadata during the scan. Malformed rule set files are left untouched, skipped,
 and shown as errors in Settings so one bad file cannot stop the app from loading.
 Metadata for a malformed file with a known UUID is retained for when that file

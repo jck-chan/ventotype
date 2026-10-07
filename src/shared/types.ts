@@ -187,12 +187,10 @@ export interface DictationError {
 }
 
 /**
- * Full result of a Playground transcription request. Unlike the production
- * dictation path, this is kept even on a non-2xx response — `raw` and
- * `status` are populated either way — since inspecting exactly what the
- * server sent back is the point of the Playground tab.
+ * Full transcription result shared by dictation and Playground. Playground
+ * keeps non-2xx responses for inspection; dictation requests strict errors.
  */
-export interface PlaygroundTranscribeResult {
+export interface TranscribeResult {
   text: string;
   raw: unknown;
   ok: boolean;

@@ -45,12 +45,6 @@ export class SettingsStore extends EventEmitter {
   }
 
   get value(): Settings {
-    this.refreshTextReplacementSets();
-    return { ...this.current };
-  }
-
-  /** Settings needed at recording start, without a synchronous rule-file scan. */
-  get snapshot(): Settings {
     return { ...this.current };
   }
 
@@ -69,14 +63,14 @@ export class SettingsStore extends EventEmitter {
   }
 
   update(patch: Partial<Settings>): Settings {
-    this.refreshTextReplacementSets();
+    if (patch.textReplacementSets !== undefined) this.refreshTextReplacementSets();
     const prev = this.current;
     const textReplacementSets = patch.textReplacementSets === undefined
       ? prev.textReplacementSets
       : validateTextReplacementSets(patch.textReplacementSets);
     if (patch.textReplacementSets !== undefined &&
         patch.textReplacementSetsRevision !== prev.textReplacementSetsRevision) {
-      throw new Error('Rule set files changed outside Settings. Reopen Settings before saving.');
+      throw new Error('Rule set files changed outside Settings. Reload the Text replacements tab before saving.');
     }
     const profiles = patch.profiles === undefined ? prev.profiles :
       patch.profiles.map((profile) => ({

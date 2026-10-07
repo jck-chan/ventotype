@@ -5,7 +5,7 @@ import {
   DEFAULT_TRANSCRIPTION_PROMPT,
   DEFAULT_MODELS,
   EndpointType,
-  PlaygroundTranscribeResult,
+  TranscribeResult,
   Settings
 } from '@shared/types';
 import { log } from './logger';
@@ -47,58 +47,42 @@ export class Transcriber {
       });
   }
 
-  /** `signal` aborts the request in flight — the cancel shortcut while transcribing. */
-  async transcribe(input: TranscribeInput, signal?: AbortSignal): Promise<string> {
-    const profile = activeProfile(this.getSettings());
-    if (!profile.baseURL) throw new Error('Missing base URL. Set it in Settings.');
-    const { tag, name } = API_LABEL[profile.type];
-
-    const { response, elapsed } = await this.post(profile, input.audio, input.mimeType, signal);
-
-    if (!response.ok) {
-      const body = await safeText(response);
-      if (isChatType(profile.type) && isEmptyCompletionError(response.status, body)) {
-        log.info(`[${tag}] ← ${response.status} (model returned nothing)  (${elapsed}ms)  0 chars`);
-        return '';
-      }
-      log.error(`[${tag}] ← ${response.status} ${response.statusText}  (${elapsed}ms)  body: ${body}`);
-      throw new Error(`${name} ${response.status}: ${body || response.statusText}`);
-    }
-
-    const payload = (await response.json()) as TranscriptionPayload;
-    const text =
-      isChatType(profile.type) ? chatText(payload) : (payload.text ?? '').trim();
-
-    log.info(`[${tag}] ← ${response.status} OK  (${elapsed}ms)  ${text.length} chars\n`);
-    return text;
-  }
-
-  /**
-   * Full-fidelity variant for the Playground tab: runs against any profile
-   * (not necessarily the active one), and never throws for a non-2xx reply —
-   * the raw body is returned either way so it can be inspected in the UI.
-   */
-  async transcribeInspect(
+  /** The same result powers dictation and Playground; dictation requests strict errors. */
+  async transcribe(
     input: TranscribeInput,
-    profile: ConnectionProfile
-  ): Promise<PlaygroundTranscribeResult> {
+    profile: ConnectionProfile,
+    options: { signal?: AbortSignal; throwOnError?: boolean } = {}
+  ): Promise<TranscribeResult> {
     if (!profile.baseURL) throw new Error('Missing base URL for this profile.');
 
-    const { response, elapsed, endpoint } = await this.post(profile, input.audio, input.mimeType);
+    const { tag, name } = API_LABEL[profile.type];
+    const { response, elapsed, endpoint } = await this.post(profile, input.audio, input.mimeType, options.signal);
     const bodyText = await safeText(response);
 
     let raw: unknown = bodyText;
+    let parseError: unknown;
     try {
       raw = bodyText ? JSON.parse(bodyText) : null;
-    } catch {
+    } catch (error) {
+      parseError = error;
       // Not JSON — surface the raw text as-is.
     }
 
+    if (response.ok && parseError && options.throwOnError) throw parseError;
     const text = response.ok
       ? isChatType(profile.type)
         ? chatText(raw as TranscriptionPayload)
         : ((raw as TranscriptionPayload)?.text ?? '').trim()
       : '';
+
+    if (response.ok) {
+      log.info(`[${tag}] ← ${response.status} OK  (${elapsed}ms)  ${text.length} chars\n`);
+    } else if (isChatType(profile.type) && isEmptyCompletionError(response.status, bodyText)) {
+      log.info(`[${tag}] ← ${response.status} (model returned nothing)  (${elapsed}ms)  0 chars`);
+    } else {
+      log.error(`[${tag}] ← ${response.status} ${response.statusText}  (${elapsed}ms)  body: ${bodyText}`);
+      if (options.throwOnError) throw new Error(`${name} ${response.status}: ${bodyText || response.statusText}`);
+    }
 
     return {
       text,

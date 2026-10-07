@@ -1,4 +1,4 @@
-import { ConnectionProfile, PlaygroundTranscribeResult, Settings } from '@shared/types';
+import { ConnectionProfile, TranscribeResult, Settings } from '@shared/types';
 import { COMPRESSED_AUDIO_BITS_PER_SECOND, encodeAsMp3, encodeAsWav, getSupportedRecordingMimeType } from '../shared/audio';
 import { getMicrophoneStream } from '../shared/microphone';
 
@@ -65,7 +65,6 @@ function selectedProfile(): ConnectionProfile | undefined {
 }
 
 // ── In-app recording ─────────────────────────────────────────────────────────
-  window.settingsAPI.refreshTextReplacementSets();
 async function startRecording(): Promise<void> {
   clearError();
   try {
@@ -179,7 +178,7 @@ async function send(): Promise<void> {
   }
 }
 
-function renderResult(result: PlaygroundTranscribeResult): void {
+function renderResult(result: TranscribeResult): void {
   lastRaw = result.raw;
   resultSection.hidden = false;
   resultStatus.textContent = `${result.status} ${result.statusText}`.trim();

@@ -2,11 +2,28 @@ import type { Settings, TextReplacementSet } from '@shared/types';
 
 const setList = document.getElementById('textReplacementSetList') as HTMLDivElement;
 const errors = document.getElementById('textReplacementSetErrors') as HTMLParagraphElement;
+const panel = document.getElementById('replacements-panel') as HTMLElement;
 let sets: TextReplacementSet[] = [];
 let loadedRevision = '';
 let loadedErrors = '';
 let operation: Promise<void> = Promise.resolve();
 let dragging = false;
+let reloadToast: HTMLElement | null = null;
+let reloadToastTimer: number | undefined;
+
+function showReloadToast(): void {
+  reloadToast?.remove();
+  window.clearTimeout(reloadToastTimer);
+  reloadToast = document.createElement('div');
+  reloadToast.className = 'replacement-reload-toast';
+  reloadToast.setAttribute('role', 'status');
+  reloadToast.textContent = 'External changes loaded';
+  document.body.append(reloadToast);
+  reloadToastTimer = window.setTimeout(() => {
+    reloadToast?.remove();
+    reloadToast = null;
+  }, 2500);
+}
 
 function queue(action: () => Promise<void>, showStatus: (message: string, type: 'ok' | 'err') => void): void {
   operation = operation.then(action).catch((err) => {
@@ -40,7 +57,7 @@ function renderSets(): void {
     toggle.addEventListener('change', () => {
       const enabled = toggle.checked;
       queue(async () => {
-        const latest = await window.settingsAPI.get();
+        const latest = await window.settingsAPI.refreshTextReplacementSets();
         const updated = latest.textReplacementSets.map((item) =>
           item.id === set.id ? { ...item, enabled } : item);
         const saved = await window.settingsAPI.set({
@@ -133,16 +150,28 @@ export function initTextReplacements(
     queue(async () => loadTextReplacements(await window.settingsAPI.createTextReplacementSet()), showStatus);
   });
 
-  window.setInterval(() => {
-    if (document.getElementById('replacements-panel')?.hidden || dragging) return;
+  const refresh = (): void => {
+    if (panel.hidden || dragging) return;
     queue(async () => {
-      const latest = await window.settingsAPI.get();
-      if (latest.textReplacementSetsRevision !== loadedRevision ||
-          JSON.stringify(latest.textReplacementSetErrors) !== loadedErrors) {
+      if (panel.hidden) return;
+      const latest = await window.settingsAPI.refreshTextReplacementSets();
+      const changed = latest.textReplacementSetsRevision !== loadedRevision;
+      if (changed || JSON.stringify(latest.textReplacementSetErrors) !== loadedErrors) {
         loadTextReplacements(latest);
+        if (changed && !panel.hidden) showReloadToast();
       }
     }, showStatus);
-  }, 1500);
+  };
+
+  new MutationObserver(() => {
+    if (!panel.hidden) refresh();
+    else {
+      reloadToast?.remove();
+      reloadToast = null;
+      window.clearTimeout(reloadToastTimer);
+    }
+  }).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
+  window.setInterval(refresh, 1500);
 
   document.getElementById('openTextReplacementsFolder')?.addEventListener('click', async () => {
     try {

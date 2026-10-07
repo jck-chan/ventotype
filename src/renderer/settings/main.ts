@@ -1,4 +1,4 @@
-import { DictationError, PlaygroundTranscribeResult, Settings } from '@shared/types';
+import { DictationError, TranscribeResult, Settings } from '@shared/types';
 import { PermissionId, PermissionState } from '@shared/permissions';
 import {
   appSettingsPatch,
@@ -30,7 +30,7 @@ declare global {
       setDirty: (dirty: boolean) => void;
       openTextReplacementsFolder: () => Promise<string>;
       createTextReplacementSet: () => Promise<Settings>;
-      refreshTextReplacementSets: () => void;
+      refreshTextReplacementSets: () => Promise<Settings>;
       openLogFile: () => Promise<void>;
       openUserDataFolder: () => Promise<void>;
       listModels: (baseURL: string, apiKey: string, type: string) => Promise<string[]>;
@@ -48,7 +48,7 @@ declare global {
         audio: ArrayBuffer,
         mimeType: string,
         profileId: string
-      ) => Promise<PlaygroundTranscribeResult>;
+      ) => Promise<TranscribeResult>;
     };
   }
 }
