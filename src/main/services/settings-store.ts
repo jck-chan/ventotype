@@ -109,6 +109,40 @@ export class SettingsStore extends EventEmitter {
     return { ...next };
   }
 
+  /** Persist list order, names, additions, and deletions without writing the open form. */
+  updateProfileStructure(
+    incoming: ConnectionProfile[],
+    activeProfileId: string,
+    previousActiveProfile?: ConnectionProfile
+  ): Settings {
+    if (!Array.isArray(incoming) || !incoming.length ||
+        new Set(incoming.map((profile) => profile.id)).size !== incoming.length ||
+        !incoming.some((profile) => profile.id === activeProfileId)) {
+      throw new Error('Invalid profile list.');
+    }
+    const prev = this.current;
+    const existing = new Map(prev.profiles.map((profile) => [profile.id, profile]));
+    const profiles = incoming.map((item) => {
+      if (typeof item.id !== 'string' || typeof item.name !== 'string') {
+        throw new Error('A profile needs an ID and name.');
+      }
+      const saved = existing.get(item.id);
+      const source = previousActiveProfile?.id === item.id && item.id !== activeProfileId
+        ? previousActiveProfile : saved ?? item;
+      return {
+        ...source,
+        id: item.id,
+        name: item.name,
+        regexReplacements: validateProfileReplacements(source.regexReplacements)
+      };
+    });
+    const next: Settings = { ...prev, profiles, activeProfileId };
+    this.saveProfiles(next);
+    this.current = next;
+    this.emit('change', next, prev);
+    return { ...next };
+  }
+
   createTextReplacementSet(): Settings {
     this.refreshTextReplacementSets();
     const prev = this.current;

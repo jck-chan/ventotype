@@ -82,6 +82,12 @@ export function registerIpcHandlers(
     (_e: IpcMainInvokeEvent, profile: ConnectionProfile, activeProfileId: string) =>
       store.updateActiveProfile(profile, activeProfileId)
   );
+  ipcMain.handle(
+    IPC.Settings.SaveProfileStructure,
+    (_e: IpcMainInvokeEvent, profiles: ConnectionProfile[], activeProfileId: string,
+      previousActiveProfile?: ConnectionProfile) =>
+      store.updateProfileStructure(profiles, activeProfileId, previousActiveProfile)
+  );
 
   ipcMain.handle(IPC.TextReplacements.OpenFolder, () => shell.openPath(store.ruleSetsDir));
   ipcMain.handle(IPC.TextReplacements.CreateSet, () => store.createTextReplacementSet());

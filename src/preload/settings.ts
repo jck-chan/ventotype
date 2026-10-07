@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   set: (patch: unknown) => ipcRenderer.invoke('settings:set', patch),
   saveActiveProfile: (profile: unknown, activeProfileId: unknown) =>
     ipcRenderer.invoke('settings:save-active-profile', profile, activeProfileId),
+  saveProfileStructure: (profiles: unknown, activeProfileId: unknown, previousActiveProfile?: unknown) =>
+    ipcRenderer.invoke('settings:save-profile-structure', profiles, activeProfileId, previousActiveProfile),
   setDirty: (dirty: boolean) => ipcRenderer.send('settings:set-dirty', dirty),
   openTextReplacementsFolder: () => ipcRenderer.invoke('text-replacements:open-folder'),
   createTextReplacementSet: () => ipcRenderer.invoke('text-replacements:create-set'),

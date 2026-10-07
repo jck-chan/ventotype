@@ -3,6 +3,7 @@ export const IPC = {
     Get: 'settings:get',
     Set: 'settings:set',
     SaveActiveProfile: 'settings:save-active-profile',
+    SaveProfileStructure: 'settings:save-profile-structure',
     SetDirty: 'settings:set-dirty'
   },
   TextReplacements: {

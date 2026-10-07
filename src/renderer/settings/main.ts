@@ -1,4 +1,4 @@
-import { DictationError, TranscribeResult, Settings } from '@shared/types';
+import { ConnectionProfile, DictationError, TranscribeResult, Settings } from '@shared/types';
 import { PermissionId, PermissionState } from '@shared/permissions';
 import {
   appSettingsPatch,
@@ -27,6 +27,8 @@ declare global {
       get: () => Promise<Settings>;
       set: (patch: Partial<Settings>) => Promise<Settings>;
       saveActiveProfile: (profile: unknown, activeProfileId: unknown) => Promise<Settings>;
+      saveProfileStructure: (profiles: ConnectionProfile[], activeProfileId: string,
+        previousActiveProfile?: ConnectionProfile) => Promise<Settings>;
       setDirty: (dirty: boolean) => void;
       openTextReplacementsFolder: () => Promise<string>;
       createTextReplacementSet: () => Promise<Settings>;
@@ -120,7 +122,10 @@ async function save(): Promise<void> {
   try {
     await flushProfileSave();
     const profileVersion = currentProfileDirtyVersion();
-    const saved = await window.settingsAPI.set(profilesPatch());
+    const { profiles, activeProfileId } = profilesPatch();
+    const profile = profiles.find((item) => item.id === activeProfileId);
+    if (!profile) throw new Error('Profile not found.');
+    const saved = await window.settingsAPI.saveActiveProfile(profile, activeProfileId);
     loadPlaygroundProfiles(saved);
     if (currentProfileDirtyVersion() === profileVersion) {
       profileDirty = false;
@@ -150,7 +155,8 @@ initProfiles(
     profileDirty = true;
     refreshDirtyState();
     showStatus(message, 'err');
-  }
+  },
+  loadPlaygroundProfiles
 );
 
 document.addEventListener('keydown', (e) => {

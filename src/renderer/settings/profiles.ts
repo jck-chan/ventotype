@@ -346,6 +346,9 @@ function openRenameDialog(id: string): void {
 
 function duplicateProfile(id: string): void {
   syncFormToActive();
+  try { validateProfileReplacements(getActive().regexReplacements); }
+  catch (err) { reportProfileError((err as Error).message); return; }
+  const previousActive = { ...getActive() };
   const index = profiles.findIndex((p) => p.id === id);
   if (index < 0) return;
 
@@ -363,7 +366,7 @@ function duplicateProfile(id: string): void {
   closeProfileDropdown();
   renderProfileList();
   loadActiveToForm();
-  markProfileDirtyExternal();
+  persistProfileStructure(previousActive, true);
 }
 
 function deleteProfile(id: string): void {
@@ -379,7 +382,7 @@ function deleteProfile(id: string): void {
   if (droppedActive) activeId = profiles[0].id;
   renderProfileList();
   if (droppedActive) loadActiveToForm();
-  markProfileDirtyExternal();
+  persistProfileStructure(undefined, droppedActive);
 }
 
 /**
@@ -467,8 +470,11 @@ function commitOrderFromDom(): void {
   if (reordered.every((p, i) => p.id === profiles[i].id)) return;
 
   profiles = reordered;
-  markProfileDirtyExternal();
+  persistProfileStructure();
 }
+
+let persistProfileStructure: (previousActive?: ConnectionProfile, clearCurrent?: boolean) => void = () => {};
+let reportProfileError: (message: string) => void = () => {};
 
 function saveActiveProfileOnly(
   profile: ConnectionProfile,
@@ -634,11 +640,32 @@ let markProfileDirtyExternal: () => void = () => {};
 export function initProfiles(
   onDirty: () => void,
   onProfileSaved: (saved: Settings) => void,
-  onProfileSaveError: (message: string) => void
+  onProfileSaveError: (message: string) => void,
+  onProfileStructureSaved: (saved: Settings) => void
 ): void {
+  reportProfileError = onProfileSaveError;
   markProfileDirtyExternal = () => {
     profileDirtyVersion += 1;
     onDirty();
+  };
+  persistProfileStructure = (previousActive, clearCurrent = false) => {
+    const snapshot = profiles.map((profile) => ({
+      ...profile,
+      regexReplacements: (profile.regexReplacements ?? []).map((rule) => ({ ...rule }))
+    }));
+    const selectedId = activeId;
+    const version = profileDirtyVersion;
+    const run = async (): Promise<void> => {
+      try {
+        const saved = await window.settingsAPI.saveProfileStructure(snapshot, selectedId, previousActive);
+        onProfileStructureSaved(saved);
+        if (clearCurrent && profileDirtyVersion === version) onProfileSaved(saved);
+      } catch (err) {
+        onProfileSaveError((err as Error).message ?? 'Failed to save profile list.');
+        console.error(err);
+      }
+    };
+    profileSavePromise = profileSavePromise.then(run, run);
   };
 
   profileTrigger.addEventListener('click', () => {
@@ -660,7 +687,6 @@ export function initProfiles(
     activeId = id;
     renderProfileList();
     loadActiveToForm();
-    markProfileDirtyExternal();
     saveActiveProfileOnly(profileToSave, activeId, onProfileSaved, onProfileSaveError);
   };
 
@@ -703,6 +729,9 @@ export function initProfiles(
 
   addProfileBtn.addEventListener('click', () => {
     syncFormToActive();
+    try { validateProfileReplacements(getActive().regexReplacements); }
+    catch (err) { onProfileSaveError((err as Error).message); return; }
+    const previousActive = { ...getActive() };
     const profile: ConnectionProfile = {
       ...DEFAULT_PROFILE,
       id: genId(),
@@ -712,7 +741,7 @@ export function initProfiles(
     activeId = profile.id;
     renderProfileList();
     loadActiveToForm();
-    markProfileDirtyExternal();
+    persistProfileStructure(previousActive, true);
     openRenameDialog(profile.id);
   });
 
@@ -734,7 +763,7 @@ export function initProfiles(
     if (!p) return;
     p.name = renameInput.value.trim() || 'Untitled';
     renderProfileList();
-    markProfileDirtyExternal();
+    persistProfileStructure();
   });
 
   fields.endpointType.addEventListener('change', () => {
