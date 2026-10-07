@@ -13,7 +13,7 @@ import { readJsonFile, writeJsonAtomic } from '../user-data/json-io';
 import { userDataPaths } from '../user-data/paths';
 import { runUserDataMigrations } from '../user-data/runner';
 import { validateProfileReplacements } from '@shared/profile-replacements';
-import { readTextReplacementSets, validateTextReplacementSets, writeTextReplacementSets } from './text-replacement-sets';
+import { createTextReplacementSet, readTextReplacementSets, validateTextReplacementSets, writeTextReplacementSets } from './text-replacement-sets';
 
 const DEFAULTS: Settings = defaultSettingsFor(process.platform);
 const revision = (sets: Settings['textReplacementSets']): string =>
@@ -46,6 +46,11 @@ export class SettingsStore extends EventEmitter {
 
   get value(): Settings {
     this.refreshTextReplacementSets();
+    return { ...this.current };
+  }
+
+  /** Settings needed at recording start, without a synchronous rule-file scan. */
+  get snapshot(): Settings {
     return { ...this.current };
   }
 
@@ -82,7 +87,13 @@ export class SettingsStore extends EventEmitter {
       ...prev, ...patch, profiles, textReplacementSets,
       textReplacementSetsRevision: revision(textReplacementSets)
     };
-    this.save(next);
+    if (patch.textReplacementSets !== undefined) {
+      writeTextReplacementSets(this.textReplacementsDir, this.textReplacementsMetadata,
+        prev.textReplacementSets, next.textReplacementSets);
+    }
+    if (['toggleShortcut', 'cancelShortcut', 'audioFormat', 'useBuiltInMicOnly',
+      'warmUpOnRecord', 'copyToClipboard'].some((key) => key in patch)) this.saveAppSettings(next);
+    if (patch.profiles !== undefined || patch.activeProfileId !== undefined) this.saveProfiles(next);
     this.current = next;
     this.emit('change', next, prev);
     return { ...next };
@@ -102,6 +113,15 @@ export class SettingsStore extends EventEmitter {
     this.current = next;
     this.emit('change', next, prev);
     return { ...next };
+  }
+
+  createTextReplacementSet(): Settings {
+    this.refreshTextReplacementSets();
+    const prev = this.current;
+    createTextReplacementSet(this.textReplacementsDir, this.textReplacementsMetadata);
+    this.refreshTextReplacementSets();
+    this.emit('change', this.current, prev);
+    return { ...this.current };
   }
 
   on<K extends keyof StoreEvents>(event: K, listener: StoreEvents[K]): this {
@@ -128,13 +148,6 @@ export class SettingsStore extends EventEmitter {
     };
   }
 
-  private save(settings: Settings): void {
-    writeTextReplacementSets(this.textReplacementsDir, this.textReplacementsMetadata,
-      this.current.textReplacementSets, settings.textReplacementSets);
-    this.saveAppSettings(settings);
-    this.saveProfiles(settings);
-  }
-
   private saveAppSettings(settings: AppSettings): void {
     writeJsonAtomic(this.settingsPath, {
       toggleShortcut: settings.toggleShortcut,
@@ -147,7 +160,7 @@ export class SettingsStore extends EventEmitter {
     this.fsyncDirectoryBestEffort(this.storeDir);
   }
 
-  private refreshTextReplacementSets(): void {
+  refreshTextReplacementSets(): void {
     const textReplacementSetErrors: Settings['textReplacementSetErrors'] = [];
     const textReplacementSets = readTextReplacementSets(this.textReplacementsDir,
       this.textReplacementsMetadata, (error) => textReplacementSetErrors.push(error));

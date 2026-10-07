@@ -23,9 +23,9 @@ if (!isPrimary) {
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 const store = new SettingsStore();
-const transcriber = new Transcriber(() => store.value);
-const typer = new Typer(() => store.value);
-const controller = new DictationController(transcriber, typer, () => store.value);
+const transcriber = new Transcriber(() => store.snapshot);
+const typer = new Typer(() => store.snapshot);
+const controller = new DictationController(transcriber, typer, () => store.snapshot);
 const fnHook = new FnHook();
 const shortcuts = new ShortcutManager(
   {
@@ -79,7 +79,20 @@ app.whenReady().then(() => {
     settingsWindow.send(IPC.Dictation.LastErrorChanged, error);
   });
 
-  controller.on('requestRecord', (options) => overlayWindow.sendStart(options));
+  controller.on('requestRecord', (options) => {
+    // The overlay can start capturing while main reads rule files. Typing uses
+    // the latest completed scan without waiting on another disk read.
+    setImmediate(() => {
+      const started = performance.now();
+      try {
+        store.refreshTextReplacementSets();
+        log.info(`[text replacements] recording-start scan: ${(performance.now() - started).toFixed(1)} ms`);
+      } catch (err) {
+        log.error('[text replacements] recording-start scan failed', err);
+      }
+    });
+    overlayWindow.sendStart(options);
+  });
   controller.on('requestStopRecord', () => overlayWindow.sendStop());
   controller.on('requestCancelRecord', () => overlayWindow.sendCancel());
 

@@ -109,10 +109,15 @@ export function writeTextReplacementSets(dir: string, metadataPath: string, prev
     }
   }
   // Write additions and edits first, then remove files absent from the new list.
-  for (const set of next) writeJsonAtomic(join(dir, set.filename), {
+  for (const set of next) {
+    const old = previous.find((item) => item.id === set.id);
+    if (old && old.filename === set.filename &&
+        JSON.stringify(old.replacements) === JSON.stringify(set.replacements)) continue;
+    writeJsonAtomic(join(dir, set.filename), {
     id: set.id,
     replacements: set.replacements
-  });
+    });
+  }
   const names = new Set(next.map((set) => set.filename));
   for (const old of previous) {
     if (!names.has(old.filename) && existsSync(join(dir, old.filename))) unlinkSync(join(dir, old.filename));
@@ -124,4 +129,22 @@ export function writeTextReplacementSets(dir: string, metadataPath: string, prev
   writeJsonAtomic(metadataPath, { order: [
     ...next.map(({ id, enabled }) => ({ id, enabled })), ...invalidEntries
   ] });
+}
+
+export function createTextReplacementSet(dir: string, metadataPath: string): void {
+  mkdirSync(dir, { recursive: true });
+  const existing = readdirSync(dir).map((name) => name.toLocaleLowerCase());
+  if (existing.filter((name) => name.endsWith('.json')).length >= 100) {
+    throw new Error('Keep at most 100 text replacement rule sets.');
+  }
+  for (let number = 0; ; number++) {
+    const filename = number === 0 ? 'untitled.json' : `untitled ${number}.json`;
+    if (existing.includes(filename.toLocaleLowerCase())) continue;
+    writeJsonAtomic(join(dir, filename), {
+      id: randomUUID(),
+      replacements: [{ original: 'Hello world!', replacement: 'Hello world!', isRegex: false }]
+    });
+    readTextReplacementSets(dir, metadataPath);
+    return;
+  }
 }

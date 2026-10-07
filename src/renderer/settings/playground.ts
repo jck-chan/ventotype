@@ -65,6 +65,7 @@ function selectedProfile(): ConnectionProfile | undefined {
 }
 
 // ── In-app recording ─────────────────────────────────────────────────────────
+  window.settingsAPI.refreshTextReplacementSets();
 async function startRecording(): Promise<void> {
   clearError();
   try {

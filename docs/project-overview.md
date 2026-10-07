@@ -113,7 +113,7 @@ the global-shortcut dictation flow. Source: `src/renderer/settings/playground.ts
 - **Audio source** — record in-app (MediaRecorder, same mic-capture path as the overlay)
   or drop/browse an existing audio file.
 - **Profile picker** — a plain `<select>` over the saved profile list (not the in-progress
-  edits on the Profiles tab — switch tabs and Save first to test unsaved changes).
+  edits on the Profiles tab — press Command+S on macOS or Control+S elsewhere first to test unsaved changes).
 - **Send** — `Transcriber.transcribeInspect()` (`src/main/services/transcriber.ts`) runs
   the request against the chosen profile and, unlike the production `transcribe()` path,
   never throws for a non-2xx reply — `PlaygroundTranscribeResult` carries `ok`/`status`/
@@ -140,8 +140,10 @@ files for direct JSON editing. Import and export dialogs are no longer used.
 `data/text-replacements-metadata.json` stores the UUID order and each set's
 enabled state. Newly discovered files go at the end and are enabled by default.
 Every enabled set runs in order after transcription; the output of one set is
-input to the next. The app rescans the folder before typing, and Settings picks
-up external file changes when reopened. Missing-file UUIDs are pruned from
+input to the next. The app starts a rule-set scan alongside recording in both
+background dictation and Playground. Typing uses the latest completed scan;
+scan duration is logged for each recording start. Settings picks
+up external file changes every 1.5 seconds while the tab is open. Missing-file UUIDs are pruned from
 metadata during the scan. Malformed rule set files are left untouched, skipped,
 and shown as errors in Settings so one bad file cannot stop the app from loading.
 Metadata for a malformed file with a known UUID is retained for when that file
@@ -157,8 +159,8 @@ Plain matching ignores case, treats comma-separated source text as variants, and
 prefers longer phrases. Latin text respects word boundaries; Han characters
 can be replaced inside continuous Chinese text. Adjacent plain rules run together
 in one pass, so their output is not processed by another plain rule in that
-group. Regex rules run in list order between those groups. Save changes applies
-order, enabled states, and new sets.
+group. Regex rules run in list order between those groups. Order and enabled states
+write through immediately; new set names are chosen from the files on disk.
 
 Each connection profile also has its own ordered regex replacement list in
 `profiles.json`. A rule has a JavaScript regular expression pattern and replacement
@@ -176,8 +178,8 @@ profile copies its rules; switching profiles saves the profile being left.
 - **Typing** — the transcript is posted as synthetic key events, so the clipboard is only touched when `copyToClipboard` is on (off by default; the toggle is under Settings → Behaviour). Both platforms let an event carry a unicode character in place of a keycode, which is what makes arbitrary text (CJK included) possible without keycode mapping. macOS: `CGEventKeyboardSetUnicodeString` via `native/typer.swift`, loaded with koffi like the fn tap, in runs of 20 UTF-16 units because the system truncates longer ones, flags cleared so a modifier still held from the shortcut can't alter the text. Windows: `SendInput` with `KEYEVENTF_UNICODE` called straight out of `user32.dll` through koffi — no native code of our own, the `INPUT` struct is declared in `typer.ts` (its tail padding is what makes `cbSize` come out at 40 on x64). Linux keeps clipboard-and-paste: `XTest` only works under X11 and Wayland blocks synthetic input outright, which no input library gets around either — there the clipboard is used either way, so `copyToClipboard` decides whether the previous contents are put back once the paste has landed (a failed paste keeps the transcript, since it's then the only copy left)
 - **Cancel** — `cancelShortcut` discards the recording without transcribing, and while the state is `transcribing` it aborts the request in flight (an `AbortController` per call in `handleAudio`, its signal passed down to `fetch`). An aborted request is not a failure: the catch returns quietly, so nothing lands in `lastError`. Typing isn't cancellable — the paste is already going into the focused app. **Esc also cancels, without being bound** — but only while a take is in flight. It can't be an ordinary binding: a registered accelerator is swallowed before any app sees it, so a permanent Esc would cost every dialog, vim buffer and fullscreen video its dismiss key in exchange for a shortcut that does nothing outside `recording`/`transcribing`. Instead `index.ts` calls `ShortcutManager.setDictationActive()` off `stateChanged`, and `syncEscape()` registers Esc on the way into those two states and releases it on the way out. It's tracked separately from `registered` so `apply()` — which tears every binding down and rebuilds it — can't drop it mid-take, and it's held off while Settings is capturing, since the shortcut field needs Esc to back out. The same reason is why Esc can't be typed into a shortcut field, so `bind()` ignores a saved `Escape` binding as redundant
 - **Quit guard** — overlay has `closable: false`; must call `overlayWindow.destroy()` before `app.quit()`
-- **Unsaved settings guard** — the settings renderer sends its dirty state to `SettingsWindow`. Closing the window or quitting while edits remain shows a native Keep Editing / Discard Changes warning; cancelling quit leaves the recording overlay intact. Profile switches save the profile being left, but the dirty indicator stays on if other profile edits are still unsaved.
-- **Profile picker** — a custom listbox, not a `<select>`, so each row can carry a drag handle plus its own duplicate/rename/delete buttons (`rowAction()` in `profiles.ts`), which act on the row you point at rather than the active profile. Duplicating copies the connection fields, gives the new profile a UUID and the next available numbered name (`Original name (1)`), then selects it. Dragging reorders the `profiles` array (the DOM leads during the drag, the array is resynced on `dragend`) and marks the form dirty, so the new order lands on Save — same as adding or deleting a profile. The active row is marked by its accent tint alone, so row hover uses a neutral background
+- **Unsaved profile guard** — the settings renderer sends the profile's dirty state to `SettingsWindow`. Closing the window or quitting while edits remain shows a native Keep Editing / Discard Changes warning; cancelling quit leaves the recording overlay intact. Profile switches save the profile being left. App settings and text replacement sets write through as they change. The current profile is marked `(Modified)` until saved with Command+S or Control+S.
+- **Profile picker** — a custom listbox, not a `<select>`, so each row can carry a drag handle plus its own duplicate/rename/delete buttons (`rowAction()` in `profiles.ts`), which act on the row you point at rather than the active profile. Duplicating copies the connection fields, gives the new profile a UUID and the next available numbered name (`Original name (1)`), then selects it. Dragging reorders the `profiles` array (the DOM leads during the drag, the array is resynced on `dragend`) and marks the profile dirty, so the new order lands on the profile keyboard save — same as adding or deleting a profile. The active row is marked by its accent tint alone, so row hover uses a neutral background
 
 
 

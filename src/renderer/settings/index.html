@@ -428,7 +428,7 @@
         >
           <section class="section">
             <h2 class="section-title">Text replacements</h2>
-            <p class="hint">Enabled rule sets run from top to bottom. Edit their JSON files in the folder; save changes to apply order and toggles.</p>
+            <p class="hint">Enabled rule sets run from top to bottom. Changes to order and toggles apply immediately.</p>
             <div class="replacement-set-bar">
               <button type="button" class="btn-secondary" id="addTextReplacementSet">+ New</button>
               <button type="button" class="btn-secondary" id="openTextReplacementsFolder">Open rule sets folder</button>
@@ -440,10 +440,7 @@
 
       </main>
 
-      <footer class="footer">
-        <span id="status" class="status-msg" aria-live="polite"></span>
-        <button id="saveBtn" class="btn-primary">Save changes</button>
-      </footer>
+      <span id="status" class="status-msg" role="status" aria-live="polite"></span>
     </div>
 
     <dialog id="playgroundJsonDialog" class="json-dialog">

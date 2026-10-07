@@ -393,29 +393,27 @@ textarea:focus {
 .permission-status.ok   { color: var(--green); }
 .permission-status.warn { color: var(--warn); }
 
-/* ── Footer ──────────────────────────────────────────────────────────────── */
-.footer {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px 20px;
-  border-top: 1px solid var(--border);
-  margin-top: 16px;
-  gap: 12px;
-}
-
 .status-msg {
+  position: fixed;
+  bottom: 16px;
+  left: 24px;
+  z-index: 10;
+  max-width: calc(100vw - 48px);
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   font-size: 12.5px;
   color: var(--text-muted);
   transition: color 300ms, opacity 300ms;
-  min-height: 18px;
 }
 
+.status-msg:empty { display: none; }
 .status-msg.ok  { color: var(--green); }
 .status-msg.err { color: var(--red);   }
 
-/* ── Save button ─────────────────────────────────────────────────────────── */
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
 .btn-primary {
   background: var(--accent);
   color: #fff;
@@ -626,6 +624,8 @@ select.select option { background: var(--bg); color: var(--text); }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.profile-modified { color: var(--text-muted); }
 
 /* Only the handle starts a drag — pointer-down on it flips the row's draggable
    flag, so plain clicks anywhere else still select the profile. */

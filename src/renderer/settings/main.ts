@@ -10,16 +10,16 @@ import { initLastError } from './last-error';
 import { initPermissions } from './permissions';
 import { initPlayground, loadPlaygroundProfiles } from './playground';
 import {
-  bumpProfileDirtyVersion,
   currentProfileDirtyVersion,
   flushProfileSave,
   initProfiles,
   loadProfiles,
   markProfileClean,
-  profilesPatch
+  profilesPatch,
+  setProfileModified
 } from './profiles';
 import { initTabs } from './tabs';
-import { initTextReplacements, loadTextReplacements, markTextReplacementSetsSaved, textReplacementSetsPatch } from './text-replacements';
+import { initTextReplacements, loadTextReplacements } from './text-replacements';
 
 declare global {
   interface Window {
@@ -29,6 +29,8 @@ declare global {
       saveActiveProfile: (profile: unknown, activeProfileId: unknown) => Promise<Settings>;
       setDirty: (dirty: boolean) => void;
       openTextReplacementsFolder: () => Promise<string>;
+      createTextReplacementSet: () => Promise<Settings>;
+      refreshTextReplacementSets: () => void;
       openLogFile: () => Promise<void>;
       openUserDataFolder: () => Promise<void>;
       listModels: (baseURL: string, apiKey: string, type: string) => Promise<string[]>;
@@ -51,18 +53,15 @@ declare global {
   }
 }
 
-const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
 const statusEl = document.getElementById('status') as HTMLSpanElement;
 
 let profileDirty = false;
-let appSettingsDirty = false;
-let appSettingsDirtyVersion = 0;
+let appSavePromise: Promise<void> = Promise.resolve();
 
 function refreshDirtyState(): void {
-  const isDirty = profileDirty || appSettingsDirty;
-  document.title = isDirty ? 'VentoType *' : 'VentoType';
-  saveBtn.textContent = isDirty ? 'Save changes *' : 'Save changes';
-  window.settingsAPI.setDirty(isDirty);
+  document.title = profileDirty ? 'VentoType *' : 'VentoType';
+  setProfileModified(profileDirty);
+  window.settingsAPI.setDirty(profileDirty);
 }
 
 function markProfileDirty(): void {
@@ -71,14 +70,20 @@ function markProfileDirty(): void {
 }
 
 function markAppSettingsDirty(): void {
-  appSettingsDirty = true;
-  appSettingsDirtyVersion += 1;
-  refreshDirtyState();
+  const patch = appSettingsPatch();
+  const openAtLogin = openAtLoginValue();
+  appSavePromise = appSavePromise.then(async () => {
+    await Promise.all([
+      window.settingsAPI.set(patch),
+      window.settingsAPI.setLoginItem(openAtLogin)
+    ]);
+  }).catch((err) => {
+    showStatus((err as Error).message || 'Failed to save settings.', 'err');
+  });
 }
 
 function markClean(): void {
   profileDirty = false;
-  appSettingsDirty = false;
   refreshDirtyState();
 }
 
@@ -102,7 +107,7 @@ async function load(): Promise<void> {
     ]);
     loadProfiles(s);
     loadAppSettings(s, openAtLogin);
-    loadTextReplacements(s, markAppSettingsDirty);
+    loadTextReplacements(s);
     loadPlaygroundProfiles(s);
     markClean();
   } catch (err) {
@@ -112,34 +117,19 @@ async function load(): Promise<void> {
 }
 
 async function save(): Promise<void> {
-  if (saveBtn.disabled) return;
-  saveBtn.disabled = true;
   try {
     await flushProfileSave();
     const profileVersion = currentProfileDirtyVersion();
-    const appVersion = appSettingsDirtyVersion;
-    const [saved] = await Promise.all([
-      window.settingsAPI.set({
-        ...profilesPatch(),
-        ...appSettingsPatch(),
-        ...textReplacementSetsPatch()
-      }),
-      window.settingsAPI.setLoginItem(openAtLoginValue())
-    ]);
+    const saved = await window.settingsAPI.set(profilesPatch());
     loadPlaygroundProfiles(saved);
-    markTextReplacementSetsSaved(saved);
     if (currentProfileDirtyVersion() === profileVersion) {
       profileDirty = false;
       markProfileClean();
     }
-    if (appSettingsDirtyVersion === appVersion) appSettingsDirty = false;
     refreshDirtyState();
-    showStatus('Saved.', 'ok');
   } catch (err) {
     showStatus((err as Error).message ?? 'Failed to save.', 'err');
     console.error(err);
-  } finally {
-    saveBtn.disabled = false;
   }
 }
 
@@ -148,28 +138,24 @@ initLastError();
 initPermissions();
 initPlayground();
 initAppSettings(markAppSettingsDirty);
-initTextReplacements(markAppSettingsDirty, showStatus);
+initTextReplacements(showStatus);
 initProfiles(
   markProfileDirty,
   (saved) => {
-    const current = profilesPatch();
-    profileDirty = JSON.stringify(current.profiles) !== JSON.stringify(saved.profiles) ||
-      current.activeProfileId !== saved.activeProfileId;
-    if (!profileDirty) markProfileClean();
+    profileDirty = false;
+    markProfileClean();
     refreshDirtyState();
   },
   (message) => {
     profileDirty = true;
-    bumpProfileDirtyVersion();
     refreshDirtyState();
     showStatus(message, 'err');
   }
 );
 
-saveBtn.addEventListener('click', save);
-
 document.addEventListener('keydown', (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+  if (((navigator.platform.startsWith('Mac') && e.metaKey) ||
+      (!navigator.platform.startsWith('Mac') && e.ctrlKey)) && e.key.toLowerCase() === 's') {
     e.preventDefault();
     save();
   }

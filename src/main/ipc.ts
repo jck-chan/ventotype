@@ -84,6 +84,16 @@ export function registerIpcHandlers(
   );
 
   ipcMain.handle(IPC.TextReplacements.OpenFolder, () => shell.openPath(store.ruleSetsDir));
+  ipcMain.handle(IPC.TextReplacements.CreateSet, () => store.createTextReplacementSet());
+  ipcMain.on(IPC.TextReplacements.Refresh, () => {
+    const started = performance.now();
+    try {
+      store.refreshTextReplacementSets();
+      log.info(`[text replacements] playground recording-start scan: ${(performance.now() - started).toFixed(1)} ms`);
+    } catch (err) {
+      log.error('[text replacements] playground recording-start scan failed', err);
+    }
+  });
 
   // Settings is recording a shortcut: the keys belong to that field, not to dictation.
   ipcMain.handle(IPC.Shortcuts.SetCapturing, (_e: IpcMainInvokeEvent, capturing: boolean) =>
@@ -152,7 +162,7 @@ export function registerIpcHandlers(
   ipcMain.handle(
     IPC.Playground.Transcribe,
     (_e: IpcMainInvokeEvent, audio: ArrayBuffer, mimeType: string, profileId: string) => {
-      const profile = store.value.profiles.find((p) => p.id === profileId);
+      const profile = store.snapshot.profiles.find((p) => p.id === profileId);
       if (!profile) throw new Error('Profile not found. Save it in Profiles first.');
       return transcriber.transcribeInspect({ audio, mimeType }, profile);
     }

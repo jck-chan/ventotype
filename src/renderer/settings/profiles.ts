@@ -73,6 +73,12 @@ let profileSavePromise: Promise<void> = Promise.resolve();
 let copyResetTimer: number | undefined;
 let renameTargetId = '';
 let profileDirtyVersion = 0;
+let profileModified = false;
+
+export function setProfileModified(modified: boolean): void {
+  profileModified = modified;
+  renderProfileList();
+}
 
 const genId = (): string => crypto.randomUUID();
 
@@ -273,12 +279,24 @@ function renderProfileList(): void {
     const name = document.createElement('span');
     name.className = 'profile-option-name';
     name.textContent = p.name;
+    if (p.id === activeId && profileModified) {
+      const modified = document.createElement('span');
+      modified.className = 'profile-modified';
+      modified.textContent = ' (Modified)';
+      name.append(modified);
+    }
 
     li.append(grip, name, rowAction(p, 'duplicate'), rowAction(p, 'rename'), rowAction(p, 'delete'));
     profileDropdown.appendChild(li);
   }
 
   profileTriggerLabel.textContent = getActive()?.name ?? '';
+  if (profileModified) {
+    const modified = document.createElement('span');
+    modified.className = 'profile-modified';
+    modified.textContent = ' (Modified)';
+    profileTriggerLabel.append(modified);
+  }
 }
 
 /**
