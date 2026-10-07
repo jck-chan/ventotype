@@ -17,7 +17,7 @@ function showReloadToast(): void {
   reloadToast = document.createElement('div');
   reloadToast.className = 'replacement-reload-toast';
   reloadToast.setAttribute('role', 'status');
-  reloadToast.textContent = 'External changes loaded';
+  reloadToast.textContent = 'External changes loaded!';
   document.body.append(reloadToast);
   reloadToastTimer = window.setTimeout(() => {
     reloadToast?.remove();
