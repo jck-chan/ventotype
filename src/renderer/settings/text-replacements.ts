@@ -3,19 +3,15 @@ import type { Settings, TextReplacementSet } from '@shared/types';
 const setList = document.getElementById('textReplacementSetList') as HTMLDivElement;
 const errors = document.getElementById('textReplacementSetErrors') as HTMLParagraphElement;
 let sets: TextReplacementSet[] = [];
+let unavailableFilenames = new Set<string>();
 let loadedRevision = '';
 let markDirty: () => void = () => {};
 
-function filenameFromInput(input: string): string {
-  const trimmed = input.trim();
-  const filename = /\.json$/i.test(trimmed) ? trimmed : `${trimmed}.json`;
-  if (filename.length > 120 || !/^[^\\/<>:"|?*\x00-\x1f.][^\\/<>:"|?*\x00-\x1f]*\.json$/i.test(filename)) {
-    throw new Error('Enter a valid JSON filename without path separators.');
+function nextUntitledFilename(): string {
+  for (let number = 0; ; number++) {
+    const filename = number === 0 ? 'untitled.json' : `untitled ${number}.json`;
+    if (!unavailableFilenames.has(filename)) return filename;
   }
-  if (sets.some((set) => set.filename.toLocaleLowerCase() === filename.toLocaleLowerCase())) {
-    throw new Error('A rule set with this filename already exists.');
-  }
-  return filename;
 }
 
 function renderSets(): void {
@@ -56,6 +52,10 @@ function renderSets(): void {
 export function loadTextReplacements(settings: Settings, onDirty: () => void): void {
   markDirty = onDirty;
   sets = settings.textReplacementSets.map((set) => ({ ...set, replacements: [...set.replacements] }));
+  unavailableFilenames = new Set([
+    ...sets.map((set) => set.filename.toLocaleLowerCase()),
+    ...settings.textReplacementSetErrors.map((error) => error.filename.toLocaleLowerCase())
+  ]);
   loadedRevision = settings.textReplacementSetsRevision;
   renderSets();
   errors.hidden = settings.textReplacementSetErrors.length === 0;
@@ -119,13 +119,15 @@ export function initTextReplacements(
   });
 
   document.getElementById('addTextReplacementSet')?.addEventListener('click', () => {
-    const input = window.prompt('New rule set filename', 'new-rules.json');
-    if (input === null) return;
-    try {
-      sets.push({ id: crypto.randomUUID(), filename: filenameFromInput(input), enabled: true, replacements: [] });
-      renderSets();
-      onDirty();
-    } catch (err) { showStatus((err as Error).message, 'err'); }
+    if (sets.length >= 100) {
+      showStatus('Keep at most 100 text replacement rule sets.', 'err');
+      return;
+    }
+    const filename = nextUntitledFilename();
+    sets.push({ id: crypto.randomUUID(), filename, enabled: true, replacements: [] });
+    unavailableFilenames.add(filename.toLocaleLowerCase());
+    renderSets();
+    onDirty();
   });
 
   document.getElementById('openTextReplacementsFolder')?.addEventListener('click', async () => {

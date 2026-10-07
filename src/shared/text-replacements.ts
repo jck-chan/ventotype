@@ -2,10 +2,6 @@ import type { TextReplacement } from './types';
 
 const MAX_RULES = 10_000;
 
-export function newTextReplacement(original = '', replacement = ''): TextReplacement {
-  return { original, replacement };
-}
-
 export function validateTextReplacements(value: unknown): TextReplacement[] {
   if (!Array.isArray(value) || value.length > MAX_RULES) {
     throw new Error(`Text replacements must be an array of at most ${MAX_RULES} rules.`);

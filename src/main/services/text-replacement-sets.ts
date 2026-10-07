@@ -15,8 +15,8 @@ export function validateSetFilename(filename: string): void {
 }
 
 export function validateTextReplacementSets(value: unknown): TextReplacementSet[] {
-  if (!Array.isArray(value) || !value.length || value.length > 100) {
-    throw new Error('Keep between 1 and 100 text replacement rule sets.');
+  if (!Array.isArray(value) || value.length > 100) {
+    throw new Error('Keep at most 100 text replacement rule sets.');
   }
   const ids = new Set<string>();
   const names = new Set<string>();
@@ -47,13 +47,6 @@ export function readTextReplacementSets(
   const paths = readdirSync(dir).filter((name) => name.toLowerCase().endsWith('.json')).sort((a, b) =>
     a.localeCompare(b)
   );
-  if (!paths.length) {
-    writeJsonAtomic(join(dir, 'default.json'), {
-      id: randomUUID(),
-      replacements: [{ original: 'Hello world!', replacement: 'Hello world!' }]
-    });
-    paths.push('default.json');
-  }
   const sets: TextReplacementSet[] = [];
   const ids = new Set<string>();
   const invalidIds = new Set<string>();
@@ -82,13 +75,6 @@ export function readTextReplacementSets(
       if (typeof fileId === 'string' && UUID.test(fileId)) invalidIds.add(fileId);
       onError({ filename, message: (error as Error).message });
     }
-  }
-  if (!sets.length) {
-    let filename = 'default.json';
-    for (let number = 1; existsSync(join(dir, filename)); number++) filename = `default-recovered-${number}.json`;
-    const id = randomUUID();
-    writeJsonAtomic(join(dir, filename), { id, replacements: [] });
-    sets.push({ id, filename, enabled: true, replacements: [] });
   }
   const metadata = readJsonFile<{ order?: MetadataEntry[] }>(metadataPath);
   const entries = Array.isArray(metadata?.order) ? metadata.order : [];
