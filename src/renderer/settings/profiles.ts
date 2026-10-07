@@ -190,17 +190,6 @@ function syncAddProfileReplacementButton(): void {
   addProfileReplacementBtn.disabled = profileReplacementList.childElementCount >= MAX_PROFILE_REPLACEMENTS;
 }
 
-function validateProfileReplacementRows(): boolean {
-  const rows = [...profileReplacementList.querySelectorAll<HTMLElement>('.profile-replacement-row')];
-  const valid = rows.map((row) => checkProfileReplacementPattern(
-    row.querySelector<HTMLInputElement>('.profile-replacement-pattern')!,
-    row.querySelector<HTMLElement>('.profile-replacement-error')!
-  )).every(Boolean);
-  if (!valid) rows.find((row) => row.querySelector('[aria-invalid="true"]'))
-    ?.querySelector<HTMLInputElement>('.profile-replacement-pattern')?.focus();
-  return valid;
-}
-
 /**
  * The prompt field is shared by every endpoint type but means something
  * different on each: the system message holding the transcription rules on
@@ -344,11 +333,9 @@ function openRenameDialog(id: string): void {
   renameInput.select();
 }
 
-function duplicateProfile(id: string): void {
+async function duplicateProfile(id: string): Promise<void> {
+  if (!await prepareChangeActive()) return;
   syncFormToActive();
-  try { validateProfileReplacements(getActive().regexReplacements); }
-  catch (err) { reportProfileError((err as Error).message); return; }
-  const previousActive = { ...getActive() };
   const index = profiles.findIndex((p) => p.id === id);
   if (index < 0) return;
 
@@ -366,13 +353,14 @@ function duplicateProfile(id: string): void {
   closeProfileDropdown();
   renderProfileList();
   loadActiveToForm();
-  persistProfileStructure(previousActive, true);
+  persistProfileStructure(true);
 }
 
-function deleteProfile(id: string): void {
+async function deleteProfile(id: string): Promise<void> {
   const p = profiles.find((x) => x.id === id);
   if (!p || profiles.length <= 1) return;
   if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+  if (id === activeId && !await prepareChangeActive()) return;
 
   // Edits still sitting in the form belong to the active profile, and deleting
   // any other row re-renders around it — fold them in before the list changes.
@@ -382,7 +370,7 @@ function deleteProfile(id: string): void {
   if (droppedActive) activeId = profiles[0].id;
   renderProfileList();
   if (droppedActive) loadActiveToForm();
-  persistProfileStructure(undefined, droppedActive);
+  persistProfileStructure(droppedActive);
 }
 
 /**
@@ -473,32 +461,8 @@ function commitOrderFromDom(): void {
   persistProfileStructure();
 }
 
-let persistProfileStructure: (previousActive?: ConnectionProfile, clearCurrent?: boolean) => void = () => {};
-let reportProfileError: (message: string) => void = () => {};
-
-function saveActiveProfileOnly(
-  profile: ConnectionProfile,
-  activeProfileId: string,
-  onSaved: (saved: Settings) => void,
-  onError: (message: string) => void
-): void {
-  const savedDirtyVersion = profileDirtyVersion;
-  profileTrigger.disabled = true;
-
-  const run = async (): Promise<void> => {
-    try {
-      const saved = await window.settingsAPI.saveActiveProfile(profile, activeProfileId);
-      if (profileDirtyVersion === savedDirtyVersion) onSaved(saved);
-    } catch (err) {
-      onError((err as Error).message ?? 'Failed to save profile.');
-      console.error(err);
-    } finally {
-      profileTrigger.disabled = false;
-    }
-  };
-
-  profileSavePromise = profileSavePromise.then(run, run);
-}
+let persistProfileStructure: (clearCurrent?: boolean) => void = () => {};
+let prepareChangeActive: () => Promise<boolean> = async () => true;
 
 function hideURLDropdown(): void {
   baseURLDropdown.classList.remove('open');
@@ -643,12 +607,25 @@ export function initProfiles(
   onProfileSaveError: (message: string) => void,
   onProfileStructureSaved: (saved: Settings) => void
 ): void {
-  reportProfileError = onProfileSaveError;
   markProfileDirtyExternal = () => {
     profileDirtyVersion += 1;
     onDirty();
   };
-  persistProfileStructure = (previousActive, clearCurrent = false) => {
+  prepareChangeActive = async () => {
+    try {
+      await profileSavePromise;
+      if (!profileModified) return true;
+      if (!await window.settingsAPI.confirmDiscardProfile()) return false;
+      const saved = await window.settingsAPI.get();
+      loadProfiles(saved);
+      onProfileSaved(saved);
+      return true;
+    } catch (err) {
+      onProfileSaveError((err as Error).message ?? 'Failed to change profile.');
+      return false;
+    }
+  };
+  persistProfileStructure = (clearCurrent = false) => {
     const snapshot = profiles.map((profile) => ({
       ...profile,
       regexReplacements: (profile.regexReplacements ?? []).map((rule) => ({ ...rule }))
@@ -657,7 +634,7 @@ export function initProfiles(
     const version = profileDirtyVersion;
     const run = async (): Promise<void> => {
       try {
-        const saved = await window.settingsAPI.saveProfileStructure(snapshot, selectedId, previousActive);
+        const saved = await window.settingsAPI.saveProfileStructure(snapshot, selectedId);
         onProfileStructureSaved(saved);
         if (clearCurrent && profileDirtyVersion === version) onProfileSaved(saved);
       } catch (err) {
@@ -673,21 +650,21 @@ export function initProfiles(
     else openProfileDropdown();
   });
 
-  const switchTo = (id: string): void => {
-    if (id === activeId) return;
+  const switchTo = async (id: string): Promise<void> => {
+    if (id === activeId || profileTrigger.disabled) return;
+    profileTrigger.disabled = true;
     try {
-      validateProfileReplacements(readProfileReplacementRows());
+      if (!await prepareChangeActive()) return;
+      const saved = await window.settingsAPI.setActiveProfile(id);
+      loadProfiles(saved);
+      onProfileStructureSaved(saved);
+      onProfileSaved(saved);
     } catch (err) {
-      validateProfileReplacementRows();
-      onProfileSaveError((err as Error).message);
-      return;
+      onProfileSaveError((err as Error).message ?? 'Failed to switch profile.');
+      console.error(err);
+    } finally {
+      profileTrigger.disabled = false;
     }
-    syncFormToActive();
-    const profileToSave = { ...getActive() };
-    activeId = id;
-    renderProfileList();
-    loadActiveToForm();
-    saveActiveProfileOnly(profileToSave, activeId, onProfileSaved, onProfileSaveError);
   };
 
   profileDropdown.addEventListener('click', (e) => {
@@ -727,11 +704,9 @@ export function initProfiles(
 
   initProfileReorder();
 
-  addProfileBtn.addEventListener('click', () => {
+  addProfileBtn.addEventListener('click', async () => {
+    if (!await prepareChangeActive()) return;
     syncFormToActive();
-    try { validateProfileReplacements(getActive().regexReplacements); }
-    catch (err) { onProfileSaveError((err as Error).message); return; }
-    const previousActive = { ...getActive() };
     const profile: ConnectionProfile = {
       ...DEFAULT_PROFILE,
       id: genId(),
@@ -741,7 +716,7 @@ export function initProfiles(
     activeId = profile.id;
     renderProfileList();
     loadActiveToForm();
-    persistProfileStructure(previousActive, true);
+    persistProfileStructure(true);
     openRenameDialog(profile.id);
   });
 

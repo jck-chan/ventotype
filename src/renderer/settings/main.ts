@@ -27,8 +27,9 @@ declare global {
       get: () => Promise<Settings>;
       set: (patch: Partial<Settings>) => Promise<Settings>;
       saveActiveProfile: (profile: unknown, activeProfileId: unknown) => Promise<Settings>;
-      saveProfileStructure: (profiles: ConnectionProfile[], activeProfileId: string,
-        previousActiveProfile?: ConnectionProfile) => Promise<Settings>;
+      saveProfileStructure: (profiles: ConnectionProfile[], activeProfileId: string) => Promise<Settings>;
+      setActiveProfile: (id: string) => Promise<Settings>;
+      confirmDiscardProfile: () => Promise<boolean>;
       setDirty: (dirty: boolean) => void;
       openTextReplacementsFolder: () => Promise<string>;
       createTextReplacementSet: () => Promise<Settings>;

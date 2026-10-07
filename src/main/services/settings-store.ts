@@ -112,8 +112,7 @@ export class SettingsStore extends EventEmitter {
   /** Persist list order, names, additions, and deletions without writing the open form. */
   updateProfileStructure(
     incoming: ConnectionProfile[],
-    activeProfileId: string,
-    previousActiveProfile?: ConnectionProfile
+    activeProfileId: string
   ): Settings {
     if (!Array.isArray(incoming) || !incoming.length ||
         new Set(incoming.map((profile) => profile.id)).size !== incoming.length ||
@@ -127,8 +126,7 @@ export class SettingsStore extends EventEmitter {
         throw new Error('A profile needs an ID and name.');
       }
       const saved = existing.get(item.id);
-      const source = previousActiveProfile?.id === item.id && item.id !== activeProfileId
-        ? previousActiveProfile : saved ?? item;
+      const source = saved ?? item;
       return {
         ...source,
         id: item.id,
@@ -137,6 +135,18 @@ export class SettingsStore extends EventEmitter {
       };
     });
     const next: Settings = { ...prev, profiles, activeProfileId };
+    this.saveProfiles(next);
+    this.current = next;
+    this.emit('change', next, prev);
+    return { ...next };
+  }
+
+  setActiveProfileId(id: string): Settings {
+    if (!this.current.profiles.some((profile) => profile.id === id)) {
+      throw new Error('Profile not found.');
+    }
+    const prev = this.current;
+    const next = { ...prev, activeProfileId: id };
     this.saveProfiles(next);
     this.current = next;
     this.emit('change', next, prev);

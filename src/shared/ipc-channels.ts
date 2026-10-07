@@ -4,6 +4,8 @@ export const IPC = {
     Set: 'settings:set',
     SaveActiveProfile: 'settings:save-active-profile',
     SaveProfileStructure: 'settings:save-profile-structure',
+    SetActiveProfile: 'settings:set-active-profile',
+    ConfirmDiscardProfile: 'settings:confirm-discard-profile',
     SetDirty: 'settings:set-dirty'
   },
   TextReplacements: {

@@ -1,4 +1,4 @@
-import { ipcMain, IpcMainInvokeEvent, shell, app } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, shell, app, BrowserWindow, dialog } from 'electron';
 import { IPC } from '@shared/ipc-channels';
 import { ConnectionProfile, EndpointType, Settings } from '@shared/types';
 import { PermissionId } from '@shared/permissions';
@@ -84,10 +84,26 @@ export function registerIpcHandlers(
   );
   ipcMain.handle(
     IPC.Settings.SaveProfileStructure,
-    (_e: IpcMainInvokeEvent, profiles: ConnectionProfile[], activeProfileId: string,
-      previousActiveProfile?: ConnectionProfile) =>
-      store.updateProfileStructure(profiles, activeProfileId, previousActiveProfile)
+    (_e: IpcMainInvokeEvent, profiles: ConnectionProfile[], activeProfileId: string) =>
+      store.updateProfileStructure(profiles, activeProfileId)
   );
+  ipcMain.handle(IPC.Settings.SetActiveProfile, (_e: IpcMainInvokeEvent, id: string) =>
+    store.setActiveProfileId(id)
+  );
+  ipcMain.handle(IPC.Settings.ConfirmDiscardProfile, (event: IpcMainInvokeEvent) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return false;
+    return dialog.showMessageBoxSync(win, {
+      type: 'warning',
+      title: 'Unsaved profile',
+      message: 'You have unsaved profile changes.',
+      detail: 'Switch profiles and discard these changes?',
+      buttons: ['Keep Editing', 'Discard Changes'],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true
+    }) === 1;
+  });
 
   ipcMain.handle(IPC.TextReplacements.OpenFolder, () => shell.openPath(store.ruleSetsDir));
   ipcMain.handle(IPC.TextReplacements.CreateSet, () => store.createTextReplacementSet());
